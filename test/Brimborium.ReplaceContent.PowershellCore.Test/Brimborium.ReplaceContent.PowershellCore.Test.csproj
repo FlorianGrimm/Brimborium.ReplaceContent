@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Brimborium.ReplaceContent.PowershellCore\Brimborium.ReplaceContent.PowershellCore.csproj" />
+    <ProjectReference Include="..\..\src\Brimborium.ReplaceContent.Library\Brimborium.ReplaceContent.Library.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.5.1" />
+    <PackageReference Include="TUnit" Version="0.24.0" />
+    <PackageReference Include="Verify" Version="30.3.0" />
+    <PackageReference Include="Verify.TUnit" Version="30.3.0" />
+  </ItemGroup>
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+</Project>
