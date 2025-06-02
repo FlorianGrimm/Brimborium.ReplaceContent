@@ -1,0 +1,24 @@
+﻿{
+  ListPart: [
+    {
+      PartType: ConstantText,
+      OldContent:
+aaaaaaaaa
+
+    },
+    {
+      PartType: PlaceholderStart,
+      OldContent: /* <Placeholder TestPlaceholder> */,
+      PlaceholderName: TestPlaceholder
+    },
+    {
+      PartType: ConstantText,
+      OldContent:
+bbbbbbbbb
+/* </Placeholder TestPlaceholder>
+ccccccccc,
+      ErrorMessage: TestPlaceholder is still open
+    }
+  ],
+  IsValid: false
+}

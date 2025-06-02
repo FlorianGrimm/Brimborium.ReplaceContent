@@ -1,0 +1,26 @@
+﻿{
+  ListPart: [
+    {
+      PartType: PlaceholderContent,
+      OldContent:
+aaaaaaaaa
+/* <Placeholder TestPlaceholder>
+bbbbbbbbb
+,
+      ErrorMessage: TestPlaceholder expected,  found.,
+      PlaceholderName: TestPlaceholder
+    },
+    {
+      PartType: PlaceholderEnd,
+      OldContent: /* </Placeholder TestPlaceholder> */,
+      ErrorMessage: TestPlaceholder expected,  found.,
+      PlaceholderName: TestPlaceholder
+    },
+    {
+      PartType: ConstantText,
+      OldContent:
+ccccccccc
+    }
+  ],
+  IsValid: false
+}

@@ -1,0 +1,33 @@
+﻿{
+  ListPart: [
+    {
+      PartType: ConstantText,
+      OldContent:
+aaaaaaaaa
+
+    },
+    {
+      PartType: PlaceholderStart,
+      OldContent: /* <Placeholder TestPlaceholder> */,
+      PlaceholderName: TestPlaceholder
+    },
+    {
+      PartType: PlaceholderContent,
+      OldContent:
+bbbbbbbbb
+,
+      PlaceholderName: TestPlaceholder
+    },
+    {
+      PartType: PlaceholderEnd,
+      OldContent: /* </Placeholder TestPlaceholder> */,
+      PlaceholderName: TestPlaceholder
+    },
+    {
+      PartType: ConstantText,
+      OldContent:
+ccccccccc
+    }
+  ],
+  IsValid: true
+}

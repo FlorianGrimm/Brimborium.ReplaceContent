@@ -1,7 +1,7 @@
-﻿using TUnit;
+using TUnit;
 using TUnit.Core;
 
-namespace Brimborium.ReplaceContent.Library;
+namespace Brimborium.ReplaceContent;
 
 public partial class TestPrepares
 {

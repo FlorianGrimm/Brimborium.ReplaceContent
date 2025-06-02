@@ -1,0 +1,14 @@
+{
+  ListPart: [
+    {
+      PartType: ConstantText,
+      OldContent:
+aaaaaaaaa
+/* xx */
+bbbbbbbbb
+/* xx */
+ccccccccc
+    }
+  ],
+  IsValid: true
+}

@@ -85,7 +85,7 @@ public sealed class RCService {
             CurrentContent = content
         };
         context.Content.Add(rcContent.Identifier, rcContent);
-        this.SetFileType(context, content);
+        this.SetFileType(context, rcContent);
         return rcContent;
     }
 
@@ -138,8 +138,13 @@ public sealed class RCService {
     public void Scan(RCContext context, RCContent content) {
         if (!(content.CurrentContent is { Length: > 0 } currentContent)) { return; }
         if (!(content.FileType is { } fileType)) { return; }
-        // TODO:
-        content.ListPart.Add(new RCPart(RCPartType.ConstantText, currentContent, null));
+
+        if (!(fileType.CommentStart is { Length: > 0 } commentStart)) { return; }
+        if (!(fileType.CommentEnd is { Length: > 0 } commentEnd)) { return; }
+        RCParser.Parse(content.CurrentContent, commentStart, commentEnd);
+        
+
+        // content.ListPart.Add(new RCPart(RCPartType.ConstantText, currentContent, null));
 #if false
         content.ListPart.Add(new RCPart(RCPartType.ConstantText, "start", null));
         content.ListPart.Add(new RCPart(RCPartType.PlaceholderStart, "/* <Placeholder Name> */", "Name"));

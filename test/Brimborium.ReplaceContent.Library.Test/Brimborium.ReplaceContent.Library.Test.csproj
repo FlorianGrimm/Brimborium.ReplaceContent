@@ -4,6 +4,7 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <RootNamespace>Brimborium.ReplaceContent</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="TUnit" Version="0.24.0" />
