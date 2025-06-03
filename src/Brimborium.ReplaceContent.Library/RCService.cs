@@ -1,16 +1,25 @@
-﻿using System.Collections.Generic;
-
-using Brimborium.Text;
+﻿using Brimborium.Text;
 
 namespace Brimborium.ReplaceContent;
 
+/// <summary>
+/// Provides services for replacing content between placeholder tags in files.
+/// </summary>
 public sealed class RCService {
     private static readonly char[] _CrLf = new char[] { '\r', '\n' };
 
+    /// <summary>
+    /// Creates a new context for replace content operations.
+    /// </summary>
+    /// <returns>A new <see cref="RCContext"/> instance.</returns>
     public RCContext NewContext() {
         return new RCContext();
     }
 
+    /// <summary>
+    /// Initializes the file type mappings by file extension in the given context.
+    /// </summary>
+    /// <param name="context">The context to initialize.</param>
     public void InitializeFileTypeByExtension(RCContext context) {
         context.FileTypeByExtension[".ps1"] = new RCFileType("Powershell", "<#", "#>");
         context.FileTypeByExtension[".js"] = new RCFileType("Javascript", "/*", "*/");
@@ -23,6 +32,12 @@ public sealed class RCService {
         context.FileTypeByExtension[".*"] = new RCFileType("Default", "/*", "*/");
     }
 
+    /// <summary>
+    /// Adds a placeholder and its replacement to the context.
+    /// </summary>
+    /// <param name="context">The context to add the placeholder to.</param>
+    /// <param name="placeholder">The placeholder name.</param>
+    /// <param name="replacement">The replacement text.</param>
     public void AddPlaceholder(
         RCContext context,
         string placeholder,
@@ -30,6 +45,11 @@ public sealed class RCService {
         context.Placeholders[placeholder] = replacement;
     }
 
+    /// <summary>
+    /// Adds multiple placeholders and their replacements to the context.
+    /// </summary>
+    /// <param name="context">The context to add the placeholders to.</param>
+    /// <param name="placeholderReplacement">A dictionary of placeholder names and their replacements.</param>
     public void AddPlaceholderDictionary(
         RCContext context,
         Dictionary<string, string> placeholderReplacement) {
@@ -38,6 +58,15 @@ public sealed class RCService {
         }
     }
 
+    /// <summary>
+    /// Adds placeholders from a file to the context.
+    /// </summary>
+    /// <param name="context">The context to add the placeholders to.</param>
+    /// <param name="filePath">The path to the file containing placeholder data.</param>
+    /// <remarks>
+    /// If the file is a JSON file, it's expected to contain a dictionary of placeholder names and replacements.
+    /// Otherwise, the file name (without extension) is used as the placeholder name and the file content as the replacement.
+    /// </remarks>
     public void AddPlaceholderFile(
         RCContext context,
         string filePath) {
@@ -56,6 +85,13 @@ public sealed class RCService {
         }
     }
 
+    /// <summary>
+    /// Adds placeholders from all .txt and .json files in a directory to the context.
+    /// </summary>
+    /// <param name="context">The context to add the placeholders to.</param>
+    /// <param name="directoryPath">The path to the directory containing placeholder files.</param>
+    /// <param name="optional">If true, no exception is thrown if the directory doesn't exist.</param>
+    /// <exception cref="System.IO.DirectoryNotFoundException">Thrown when the directory doesn't exist and <paramref name="optional"/> is false.</exception>
     public void AddPlaceholderDirectory(
         RCContext context,
         string directoryPath,
@@ -83,6 +119,13 @@ public sealed class RCService {
         }
     }
 
+    /// <summary>
+    /// Adds text content to the context with the specified identifier.
+    /// </summary>
+    /// <param name="context">The context to add the content to.</param>
+    /// <param name="identifier">The identifier for the content.</param>
+    /// <param name="content">The text content.</param>
+    /// <returns>The created <see cref="RCContent"/> instance.</returns>
     public RCContent AddContentText(RCContext context, string identifier, string content) {
         var rcContent = new RCContent(identifier) {
             CurrentContent = content
@@ -91,6 +134,12 @@ public sealed class RCService {
         return rcContent;
     }
 
+    /// <summary>
+    /// Adds file content to the context.
+    /// </summary>
+    /// <param name="context">The context to add the content to.</param>
+    /// <param name="filePath">The path to the file to add.</param>
+    /// <returns>The created <see cref="RCContent"/> instance.</returns>
     public RCContent AddContentFile(RCContext context, string filePath) {
         var content = System.IO.File.ReadAllText(filePath);
         var rcContent = new RCContent(filePath) {
@@ -102,6 +151,13 @@ public sealed class RCService {
         return rcContent;
     }
 
+    /// <summary>
+    /// Adds all files in a directory to the context.
+    /// </summary>
+    /// <param name="context">The context to add the content to.</param>
+    /// <param name="directoryPath">The path to the directory containing files to add.</param>
+    /// <param name="fileExtensions">Optional set of file extensions to filter by. If null, all files are included.</param>
+    /// <exception cref="System.IO.DirectoryNotFoundException">Thrown when the directory doesn't exist.</exception>
     public void AddContentDirectory(RCContext context, string directoryPath, HashSet<string>? fileExtensions) {
         System.IO.DirectoryInfo di = new(directoryPath);
         if (!di.Exists) {
@@ -120,10 +176,22 @@ public sealed class RCService {
         }
     }
 
+    /// <summary>
+    /// Adds a file type mapping to the context.
+    /// </summary>
+    /// <param name="context">The context to add the file type to.</param>
+    /// <param name="fileExtension">The file extension to map.</param>
+    /// <param name="fileType">The file type to associate with the extension.</param>
     public void AddFileType(RCContext context, string fileExtension, RCFileType fileType) {
         context.FileTypeByExtension[fileExtension] = fileType;
     }
 
+    /// <summary>
+    /// Sets the file type for a content item based on its file extension.
+    /// </summary>
+    /// <param name="context">The context containing file type mappings.</param>
+    /// <param name="content">The content to set the file type for.</param>
+    /// <returns>The file type that was set, or null if no matching file type was found.</returns>
     public RCFileType? SetFileType(RCContext context, RCContent content) {
         if (!((content.FilePath ?? content.Identifier) is { Length: > 0 } filePath)) {
             return null;
@@ -142,12 +210,22 @@ public sealed class RCService {
         }
     }
 
+    /// <summary>
+    /// Scans all content in the context for placeholders.
+    /// </summary>
+    /// <param name="context">The context containing content to scan.</param>
     public void Scan(RCContext context) {
         foreach (var content in context.Content.Values) {
             this.Scan(context, content);
         }
     }
 
+    /// <summary>
+    /// Scans a specific content item for placeholders.
+    /// </summary>
+    /// <param name="context">The context containing file type information.</param>
+    /// <param name="content">The content to scan.</param>
+    /// <returns>An error part if scanning failed, or null if successful.</returns>
     public RCPart? Scan(RCContext context, RCContent content) {
         if (!(content.CurrentContent is { Length: > 0 } currentContent)) {
             return default;
@@ -173,6 +251,10 @@ public sealed class RCService {
         }
     }
 
+    /// <summary>
+    /// Replaces placeholders in all content in the context.
+    /// </summary>
+    /// <param name="context">The context containing content and placeholders.</param>
     public void Replace(RCContext context) {
         foreach (var content in context.Content.Values) {
             this.Replace(context, content);
@@ -180,6 +262,11 @@ public sealed class RCService {
         }
     }
 
+    /// <summary>
+    /// Replaces placeholders in a specific content item.
+    /// </summary>
+    /// <param name="context">The context containing placeholders.</param>
+    /// <param name="content">The content to process.</param>
     public void Replace(RCContext context, RCContent content) {
         if (content.ParseResult.ContainsError(out var error)) {
             // TODO: handle error
@@ -248,6 +335,11 @@ public sealed class RCService {
         }
     }
 
+    /// <summary>
+    /// Generates the next content for a content item after placeholder replacement.
+    /// </summary>
+    /// <param name="context">The context containing the content.</param>
+    /// <param name="content">The content to generate next content for.</param>
     public void GenerateNextContent(RCContext context, RCContent content) {
         bool hasPlaceholder = content.Modified;
         if (!hasPlaceholder) {
@@ -293,6 +385,10 @@ public sealed class RCService {
         }
     }
 
+    /// <summary>
+    /// Displays differences between original and replaced content.
+    /// </summary>
+    /// <param name="context">The context containing content with replacements.</param>
     public void ShowDiff(RCContext context) {
         var sbDiff = new System.Text.StringBuilder();
         foreach (var content in context.Content.Values) {
@@ -301,6 +397,12 @@ public sealed class RCService {
         System.Console.WriteLine(sbDiff.ToString());
     }
 
+    /// <summary>
+    /// Displays differences for a specific content item.
+    /// </summary>
+    /// <param name="context">The context containing the content.</param>
+    /// <param name="content">The content to show differences for.</param>
+    /// <param name="sbDiff">The StringBuilder to append differences to.</param>
     public void ShowDiff(RCContext context, RCContent content, StringBuilder sbDiff) {
         if (!content.Modified) { return; }
         foreach (var part in content.ParseResult.ListPart) {
@@ -321,6 +423,11 @@ public sealed class RCService {
         }
     }
 
+    /// <summary>
+    /// Gets a list of content items that have been modified and creates temporary files for them.
+    /// </summary>
+    /// <param name="context">The context containing content with replacements.</param>
+    /// <returns>A tuple containing the list of modified content items and a flag indicating if any operations were not possible.</returns>
     public (List<RCContent> result, bool containsNotPossible) GetDiffFile(RCContext context) {
         List<RCContent> result = new();
         bool containsNotPossible = false;
@@ -335,6 +442,12 @@ public sealed class RCService {
         return (result, containsNotPossible);
     }
 
+    /// <summary>
+    /// Creates a temporary file with the replaced content for a specific content item.
+    /// </summary>
+    /// <param name="context">The context containing the content.</param>
+    /// <param name="content">The content to process.</param>
+    /// <returns>A <see cref="RCresultBool"/> indicating success or failure.</returns>
     public RCresultBool GetDiffFile(RCContext context, RCContent content) {
         if (!(content.FilePath is { Length: > 0 } filePath)) { return RCresultBool.NotPossible; }
         content.NextFilePath = filePath + ".temp";
@@ -352,12 +465,21 @@ public sealed class RCService {
         }
     }
 
+    /// <summary>
+    /// Writes the modified content back to the original files.
+    /// </summary>
+    /// <param name="context">The context containing content to write.</param>
     public void Write(RCContext context) {
         foreach (var content in context.Content.Values) {
             this.Write(context, content);
         }
     }
 
+    /// <summary>
+    /// Writes the modified content back to the original file.
+    /// </summary>
+    /// <param name="context">The context containing content to write.</param>
+    /// <param name="content">The content to write.</param>
     public void Write(RCContext context, RCContent content) {
         if (!(content.FilePath is { Length: > 0 } filePath)) {
             return;

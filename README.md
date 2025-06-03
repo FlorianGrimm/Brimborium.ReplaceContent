@@ -59,13 +59,27 @@ FROM TableA
 
 ## Usage - Command Line
 
-```cmd
-ReplaceContent.exe -File Source.sql -ReplaceDirectory "Replacements"
+Syntax:
+
+```Text
+ReplaceContent.exe [-File path] [-Directory path] [-ReplacementsDirectory path] [-Write] [-Verbose]
 ```
 
 ```cmd
-ReplaceContent.exe -Directory "src" -ReplaceDirectory "Replacements"
+ReplaceContent.exe -File Source.sql
 ```
+
+```cmd
+ReplaceContent.exe -Directory "src"
+```
+
+Parameters:
+
+-File: the file to process.
+-Directory: the directory with the files to process.
+-ReplacementsDirectory: the directory with the replacement files.
+-Write: write the changes to the file.
+-Verbose: show more information.
 
 ## Usage - PowerShell
 

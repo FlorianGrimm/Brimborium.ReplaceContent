@@ -1,0 +1,7 @@
+/* <Placeholder Greeting> */
+ToBeReplacedHello
+/* </Placeholder Greeting> */
+    /* <Placeholder TestPlaceholder> */
+    ToBeReplacedWorld
+    /* </Placeholder TestPlaceholder> */
+!

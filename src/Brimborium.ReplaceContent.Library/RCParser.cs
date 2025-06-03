@@ -4,6 +4,9 @@ using Brimborium.Text;
 
 namespace Brimborium.ReplaceContent;
 
+/// <summary>
+/// Provides methods for parsing content with placeholders.
+/// </summary>
 public static class RCParser {
     private static readonly string _PlaceholderStartStart = "<Placeholder ";
     private static readonly string _PlaceholderEndStart = "</Placeholder";
@@ -12,7 +15,13 @@ public static class RCParser {
     private static readonly char[] _TabAndSpace = new char[] { '\t', ' ' };
     private static readonly char[] _CrLf = new char[] { '\r', '\n' };
     
-
+    /// <summary>
+    /// Parses the content and identifies placeholders within comment blocks.
+    /// </summary>
+    /// <param name="currentContent">The content to parse.</param>
+    /// <param name="commentStart">The string that marks the start of a comment.</param>
+    /// <param name="commentEnd">The string that marks the end of a comment.</param>
+    /// <returns>A <see cref="RCParseResult"/> containing the parsed parts.</returns>
     public static RCParseResult Parse(string currentContent, string commentStart, string commentEnd) {
         List<RCPart> result = new();
         if (!(currentContent is { Length: > 0 })) { return new RCParseResult(result); }

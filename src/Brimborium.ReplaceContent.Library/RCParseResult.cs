@@ -1,12 +1,26 @@
 namespace Brimborium.ReplaceContent;
 
+/// <summary>
+/// Represents the result of parsing content for placeholders.
+/// </summary>
 public class RCParseResult {
+    /// <summary>
+    /// Gets the list of parsed parts from the content.
+    /// </summary>
     public readonly List<RCPart> ListPart;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="RCParseResult"/> class.
+    /// </summary>
+    /// <param name="listRCPart">The list of parsed parts.</param>
     public RCParseResult(List<RCPart> listRCPart) {
         this.ListPart = listRCPart;
     }
 
+    /// <summary>
+    /// Gets a value indicating whether the parse result is valid.
+    /// A valid result has no errors and follows the expected structure of placeholders.
+    /// </summary>
     public bool IsValid {
         get {
             if ((this.ListPart.Count > 0) && (this.ListPart.All(p => p.ErrorMessage is null))) {
@@ -53,6 +67,11 @@ public class RCParseResult {
         }
     }
 
+    /// <summary>
+    /// Determines whether the parse result contains any errors.
+    /// </summary>
+    /// <param name="result">When this method returns, contains the first error part if found; otherwise, null.</param>
+    /// <returns>true if the parse result contains errors; otherwise, false.</returns>
     public bool ContainsError([MaybeNullWhen(false)] out RCPart result) {
         foreach (var part in this.ListPart) {
             if (part.ErrorMessage is not null) {
