@@ -1,7 +1,7 @@
 /* <Placeholder Greeting> */
-ToBeReplacedHello
+Hello
 /* </Placeholder Greeting> */
     /* <Placeholder TestPlaceholder> */
-    ToBeReplacedWorld
+    World
     /* </Placeholder TestPlaceholder> */
 !

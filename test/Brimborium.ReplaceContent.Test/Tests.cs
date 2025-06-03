@@ -28,11 +28,15 @@ public class Tests {
         if (!diAct.Exists) { diAct.Create(); }
 
         // copy files from Arrange to Act directory
-        foreach (var di in diAct.GetDirectories()) {
+        foreach (var di in diArrange.GetDirectories()) {
             diAct.CreateSubdirectory(di.Name);
         }
-        foreach (var fi in diArrange.GetFiles()) {
-            fi.CopyTo(System.IO.Path.Combine(diAct.FullName, fi.Name), true);
+        var arrangeFullName = diArrange.FullName;
+        foreach (var fi in diArrange.GetFiles("*.*", new EnumerationOptions() { RecurseSubdirectories = true })) {
+            if (fi.FullName.StartsWith(arrangeFullName)) {
+                var relativePath = fi.FullName.Substring(arrangeFullName.Length).TrimStart('\\', '/');
+                fi.CopyTo(System.IO.Path.Combine(diAct.FullName,  relativePath), true);
+            }
         }
 
         // invoke tool
