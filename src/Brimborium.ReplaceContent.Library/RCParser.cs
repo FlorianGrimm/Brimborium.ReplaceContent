@@ -1,3 +1,5 @@
+using System.Diagnostics.Metrics;
+
 using Brimborium.Text;
 
 namespace Brimborium.ReplaceContent;
@@ -8,10 +10,12 @@ public static class RCParser {
     private static readonly string _PlaceholderStartEnd = ">";
     private static readonly string _PlaceholderEndEnd = ">";
     private static readonly char[] _TabAndSpace = new char[] { '\t', ' ' };
+    private static readonly char[] _CrLf = new char[] { '\r', '\n' };
+    
 
-    public static ParseResult Parse(string currentContent, string commentStart, string commentEnd) {
+    public static RCParseResult Parse(string currentContent, string commentStart, string commentEnd) {
         List<RCPart> result = new();
-        if (!(currentContent is { Length: > 0 })) { return new ParseResult(result); }
+        if (!(currentContent is { Length: > 0 })) { return new RCParseResult(result); }
 
         StringSlice content = currentContent.AsStringSlice();
         StringSlice commentStartAsSlice = commentStart.AsStringSlice();
@@ -34,8 +38,7 @@ public static class RCParser {
                     {
                         var contentPayload = foundCommentEnd.Before.Trim();
                         // check if the contentPayload is a placeholder start or end
-                        if (contentPayload.StartsWith(_PlaceholderStartStart)
-                            && contentPayload.EndsWith(_PlaceholderStartEnd)) {
+                        if (contentPayload.StartsWith(_PlaceholderStartStart) && contentPayload.EndsWith(_PlaceholderStartEnd)) {
                             // contentPayload=|<Placeholder xxx>|
 
                             // contentBeforeComment=|>...<|/*
@@ -57,7 +60,11 @@ public static class RCParser {
                                 }
                             }
 
-                            var contentCompletePlaceholder = foundCommentStart.FoundAndAfter.SubstringBetweenStartAndEnd(foundCommentEnd.Found);
+
+                            //var contentCompletePlaceholder = foundCommentStart.FoundAndAfter.SubstringBetweenStartAndEnd(foundCommentEnd.Found);
+                            var commentEndAfterWithoutTrailingWS = foundCommentEnd.After.TrimStart(_TabAndSpace).TrimStart(_CrLf);
+                            var contentCompletePlaceholder = foundCommentStart.FoundAndAfter
+                                .SubstringBetweenStartAndStart(commentEndAfterWithoutTrailingWS);
 
                             // contentPlaceholderName = =<Placeholder |>xxx<|>
                             var contentPlaceholderName = contentPayload[new Range(new Index(_PlaceholderStartStart.Length, false), new Index(_PlaceholderStartEnd.Length, true))]
@@ -71,13 +78,15 @@ public static class RCParser {
                                     errorMessage: null,
                                     placeholderName: contentPlaceholderName,
                                     indentation: currentIndentation));
-                            content = contentAfterLastFind = foundCommentEnd.After;
-                        } else if (contentPayload.StartsWith(_PlaceholderEndStart)
-                            && contentPayload.EndsWith(_PlaceholderEndEnd)) {
+                            content = contentAfterLastFind = commentEndAfterWithoutTrailingWS;
+
+                        } else if (contentPayload.StartsWith(_PlaceholderEndStart) && contentPayload.EndsWith(_PlaceholderEndEnd)) {
                             // contentPayload=|</Placeholder xxx>|
 
+                            var contentCompletePlaceholder = foundCommentStart.Before.TrimEnd(_TabAndSpace).SubstringBetweenEndAndEnd(foundCommentEnd.Found);
+
                             // contentBeforeComment=|>...<|/*
-                            var contentBeforeComment = contentAfterLastFind.SubstringBetweenStartAndStart(foundCommentStart.Found);
+                            var contentBeforeComment = contentAfterLastFind.SubstringBetweenStartAndStart(contentCompletePlaceholder);
 
                             // contentPlaceholderName = =</Placeholder |>xxx<|>
                             var contentPlaceholderName = contentPayload[new Range(new Index(_PlaceholderStartStart.Length, false), new Index(_PlaceholderStartEnd.Length, true))]
@@ -85,9 +94,6 @@ public static class RCParser {
                             if (string.IsNullOrEmpty(contentPlaceholderName)) {
                                 contentPlaceholderName = currentPlaceholderName;
                             }
-
-                            var contentCompletePlaceholder = foundCommentStart.FoundAndAfter.SubstringBetweenStartAndEnd(foundCommentEnd.Found);
-
 
                             string? errorMessage;
                             if (string.Equals(contentPlaceholderName, currentPlaceholderName)) {
@@ -116,6 +122,7 @@ public static class RCParser {
 
                             currentPlaceholderName = null;
                             content = contentAfterLastFind = foundCommentEnd.After;
+                            //content = contentAfterLastFind = commentEndAfterWithoutTrailingWS;
                         } else {
                             content = foundCommentEnd.After;
                         }
@@ -124,27 +131,6 @@ public static class RCParser {
                     content = foundCommentStart.After;
                 }
             } else {
-                //var contentLength = contentAfterLastFind.Length;
-                //if (0 < contentLength) {
-                //    if (currentPlaceholderName is not null) {
-                //        result.Add(
-                //            new RCPart(
-                //                partType: RCPartType.ConstantText,
-                //                oldContent: content.ToString(),
-                //                errorMessage: $"{currentPlaceholderName} is still open",
-                //                placeholderName: null,
-                //                indentation: currentIndentation));
-                //    } else {
-                //        result.Add(
-                //            new RCPart(
-                //                partType: RCPartType.ConstantText,
-                //                oldContent: content.ToString(),
-                //                errorMessage: null,
-                //                placeholderName: null,
-                //                indentation: null));
-                //    }
-                //    contentAfterLastFind = content = contentAfterLastFind.Substring(contentLength);
-                //}
                 break;
             }
         }
@@ -175,29 +161,6 @@ public static class RCParser {
             throw new ArgumentException("Content could not be parsed completely. Remaining content: " + content.ToString(), nameof(currentContent));
         }
 
-        return new ParseResult(result);
+        return new RCParseResult(result);
     }
-}
-public class ParseResult {
-    public readonly List<RCPart> ListPart;
-
-    public ParseResult(List<RCPart> listRCPart) {
-        this.ListPart = listRCPart;
-    }
-
-    public bool IsValid => (this.ListPart.Count > 0) && (this.ListPart.All(p => p.ErrorMessage is null));
-
-    public bool ContainsError([MaybeNullWhen(false)] out RCPart result) {
-        foreach (var part in this.ListPart) {
-            if (part.ErrorMessage is not null) {
-                result = part;
-                return true;
-            }
-        }
-        {
-            result = default;
-            return false;
-        }
-    }
-
 }

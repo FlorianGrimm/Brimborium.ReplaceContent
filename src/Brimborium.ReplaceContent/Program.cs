@@ -1,11 +1,10 @@
 using System.Threading.Tasks;
 
-using Brimborium.ReplaceContent;
+using DiffEngine;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.VisualBasic.FileIO;
 
 namespace Brimborium.ReplaceContent;
 
@@ -21,7 +20,7 @@ public class AppParameters {
 }
 
 public class Program {
-    public static int Main(string[] args) {
+    public static async Task<int> Main(string[] args) {
         var configurationBuilder = new Microsoft.Extensions.Configuration.ConfigurationBuilder();
         configurationBuilder.AddCommandLine(args);
         configurationBuilder.AddEnvironmentVariables();
@@ -50,18 +49,18 @@ public class Program {
         var replaceContentService = serviceProvider.GetRequiredService<RCService>();
         var context = replaceContentService.NewContext();
         replaceContentService.Initialize(context);
-        
-        if (appParameters.FileType is { Count: > 0 } appFileType) { 
+
+        if (appParameters.FileType is { Count: > 0 } appFileType) {
             foreach (var kvp in appFileType) {
                 context.FileTypeByExtension[kvp.Key] = kvp.Value;
             }
-        } else 
+        } else
 
-        replaceContentService.AddPlaceholderDirectory(context, appParameters.ReplacementsDirectory);
+            replaceContentService.AddPlaceholderDirectory(context, appParameters.ReplacementsDirectory);
         int result = 0;
         if (appParameters.File is { Length: > 0 } filePath) {
             replaceContentService.AddContentFile(context, filePath);
-            
+
         }
         if (appParameters.Directory is { Length: > 0 } directoryPath) {
             if (appParameters.FileExtensions is { Length: > 0 } fileExtensions && ".*" != fileExtensions) {
@@ -74,7 +73,42 @@ public class Program {
         replaceContentService.Scan(context);
         replaceContentService.Replace(context);
         if (!appParameters.Write) {
-            replaceContentService.ShowDiff(context);
+            if (!DiffEngine.DiffRunner.Disabled) {
+                var (listDiff, _) = replaceContentService.GetDiffFile(context);
+                if (listDiff.Count == 0) {
+                    Console.WriteLine("No differences found.");
+                    return 0;
+                }
+                if (appParameters.Verbose) {
+                    Console.WriteLine("Differences found:");
+                    foreach (var diff in listDiff) {
+                        Console.WriteLine($"- {diff.FilePath}");
+                    }
+                }
+                foreach(var diff in listDiff) {
+                    var launchResult=await DiffEngine.DiffRunner.LaunchForTextAsync(tempFile: "", targetFile: "");
+                    switch (launchResult) {
+                        case LaunchResult.NoEmptyFileForExtension:
+                            break;
+                        case LaunchResult.AlreadyRunningAndSupportsRefresh:
+                            break;
+                        case LaunchResult.StartedNewInstance:
+                            break;
+                        case LaunchResult.TooManyRunningDiffTools:
+                            return 0;
+                        case LaunchResult.NoDiffToolFound:
+                            return 0;
+                        case LaunchResult.Disabled:
+                            return 0;
+                        default:
+                            break;
+                    }
+                }
+                return 0;
+            }
+            {
+                replaceContentService.ShowDiff(context);
+            }
         } else {
             replaceContentService.Write(context);
         }

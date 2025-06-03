@@ -1,7 +1,3 @@
-// Copyright (c) Microsoft Corporation.
-// Licensed under the MIT License.
-
-
 using Brimborium.Text;
 
 namespace Brimborium.ReplaceContent;
@@ -15,16 +11,18 @@ public class RCPart {
         string? errorMessage,
         string? placeholderName,
         string? indentation) {
-        PartType = partType;
-        OldContent = oldContent;
-        ErrorMessage = errorMessage;
-        PlaceholderName = placeholderName;
+        this.PartType = partType;
+        this.OldContent = oldContent;
+        this.ErrorMessage = errorMessage;
+        this.PlaceholderName = placeholderName;
+        this.Indentation = indentation;
     }
 
     public RCPartType PartType { get; }
     public string OldContent { get; }
     public string? ErrorMessage { get; }
     public string? PlaceholderName { get; }
+    public string? Indentation { get; }
     public string? NextContent { get; set; }
 
     private string GetDebuggerDisplay() {
@@ -61,4 +59,5 @@ public enum RCPartType {
     PlaceholderStart,
     PlaceholderEnd,
     PlaceholderContent,
+    Error
 }

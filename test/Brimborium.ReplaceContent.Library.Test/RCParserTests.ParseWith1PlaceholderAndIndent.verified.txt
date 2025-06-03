@@ -4,25 +4,26 @@
       PartType: ConstantText,
       OldContent:
 aaaaaaaaa
-
+    
     },
     {
       PartType: PlaceholderStart,
       OldContent:
 /* <Placeholder TestPlaceholder> */
 ,
-      PlaceholderName: TestPlaceholder
+      PlaceholderName: TestPlaceholder,
+      Indentation:     
     },
     {
       PartType: PlaceholderContent,
       OldContent:
-bbbbbbbbb
+        bbbbbbbbb
 ,
       PlaceholderName: TestPlaceholder
     },
     {
       PartType: PlaceholderEnd,
-      OldContent: /* </Placeholder TestPlaceholder> */,
+      OldContent:     /* </Placeholder TestPlaceholder> */,
       PlaceholderName: TestPlaceholder
     },
     {

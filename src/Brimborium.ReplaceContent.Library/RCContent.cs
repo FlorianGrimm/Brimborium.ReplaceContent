@@ -6,13 +6,15 @@ public sealed class RCContent {
 
     }
 
-    public string Identifier { get;  }
+    public string Identifier { get; }
 
     public string? FilePath { get; set; }
+    public string? NextFilePath { get; set; }
     public RCFileType? FileType { get; set; }
     public string? CurrentContent { get; set; }
     public string? NextContent { get; set; }
 
 
-    public List<RCPart> ListPart { get; } = new();
+    public RCParseResult ParseResult { get; } = new(new());
+    public bool Modified { get; set; }
 }

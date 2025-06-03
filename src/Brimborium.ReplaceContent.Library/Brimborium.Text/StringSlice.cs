@@ -375,17 +375,6 @@ public readonly struct StringSlice : IEquatable<StringSlice> {
         return new StringSlice(this.Text, thisEnd..otherEnd);
     }
 
-
-
-
-
-
-
-
-
-
-
-
     /// <summary>
     /// Attempts to extract a substring from the current <see cref="StringSlice"/> that starts at the same position as
     /// this instance and ends at the start position of the specified <paramref name="other"/>.
@@ -499,23 +488,6 @@ public readonly struct StringSlice : IEquatable<StringSlice> {
         result = new StringSlice(this.Text, thisEnd..otherEnd);
         return true;
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     /// <summary>
     /// Gets the text and range that define this slice.

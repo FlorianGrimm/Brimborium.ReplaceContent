@@ -8,7 +8,9 @@ aaaaaaaaa
     },
     {
       PartType: PlaceholderStart,
-      OldContent: /* <Placeholder TestPlaceholder> */,
+      OldContent:
+/* <Placeholder TestPlaceholder> */
+,
       PlaceholderName: TestPlaceholder
     },
     {

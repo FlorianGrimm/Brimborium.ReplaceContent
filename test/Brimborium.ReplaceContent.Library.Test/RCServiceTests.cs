@@ -7,22 +7,25 @@ using System.Threading.Tasks;
 namespace Brimborium.ReplaceContent;
 public class RCServiceTests {
     [Test]
-    public void Scan001() {
+    public async Task Integration001() {
         var rcService = new RCService();
         var context = rcService.NewContext();
         rcService.Initialize(context);
         rcService.AddPlaceholder(context, "TestPlaceholder", "TestReplacement");
-        var content = rcService.AddContentText(context, "TestFile.txt",
+        var content = rcService.AddContentText(
+            context, 
+            "TestFile.txt",
             """
             aaaaaaaaa
-            /* <Placeholder TestPlaceholder> */
-            bbbbbbbbb
-            /* </Placeholder TestPlaceholder> */
+              /* <Placeholder TestPlaceholder> */
+                bbbbbbbbb
+              /* </Placeholder TestPlaceholder> */
             ccccccccc
             """);
         rcService.SetFileType(context, content);
         rcService.Scan(context, content);
         rcService.Replace(context, content);
         rcService.GenerateNextContent(context, content);
+        await Verify(content);
     }
 }

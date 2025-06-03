@@ -13,6 +13,25 @@ public class RCParserTests {
         var result = RCParser.Parse(content, "/*", "*/");
         
         await Assert.That(result.ListPart.Count).IsEqualTo(5);
+        await Assert.That(result.IsValid).IsEqualTo(true);
+
+        var settings = new VerifySettings();
+        settings.IgnoreMembers<RCPart>(x => x.NextContent);
+        await Verify(result, settings);
+    }
+
+    [Test]
+    public async Task ParseWith1PlaceholderAndIndent() {
+        var content = """
+            aaaaaaaaa
+                /* <Placeholder TestPlaceholder> */
+                    bbbbbbbbb
+                /* </Placeholder TestPlaceholder> */
+            ccccccccc
+            """;
+        var result = RCParser.Parse(content, "/*", "*/");
+
+        //await Assert.That(result.ListPart.Count).IsEqualTo(5);
 
         var settings = new VerifySettings();
         settings.IgnoreMembers<RCPart>(x => x.NextContent);

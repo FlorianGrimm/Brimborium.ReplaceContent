@@ -1,0 +1,5 @@
+Hello
+  /* <Placeholder TestPlaceholder> */
+  World
+  /* </Placeholder TestPlaceholder> */
+!
