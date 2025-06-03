@@ -10,7 +10,7 @@ public class RCServiceTests {
     public async Task Integration001() {
         var rcService = new RCService();
         var context = rcService.NewContext();
-        rcService.Initialize(context);
+        rcService.InitializeFileTypeByExtension(context);
         rcService.AddPlaceholder(context, "TestPlaceholder", "TestReplacement");
         var content = rcService.AddContentText(
             context, 

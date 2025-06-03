@@ -11,18 +11,16 @@ public sealed class RCService {
         return new RCContext();
     }
 
-    public void Initialize(RCContext context) {
-        {
-            context.FileTypeByExtension[".ps1"] = new RCFileType("Powershell", "<#", "#>");
-            context.FileTypeByExtension[".js"] = new RCFileType("Javascript", "/*", "*/");
-            context.FileTypeByExtension[".jsx"] = new RCFileType("Javascript", "/*", "*/");
-            context.FileTypeByExtension[".ts"] = new RCFileType("Typescript", "/*", "*/");
-            context.FileTypeByExtension[".tsx"] = new RCFileType("Typescript", "/*", "*/");
-            context.FileTypeByExtension[".cs"] = new RCFileType("c#", "/*", "*/");
-            context.FileTypeByExtension[".sql"] = new RCFileType("SQL", "/*", "*/");
-            context.FileTypeByExtension[".html"] = new RCFileType("HTML", "<!--", "-->");
-            context.FileTypeByExtension[".*"] = new RCFileType("Default", "/*", "*/");
-        }
+    public void InitializeFileTypeByExtension(RCContext context) {
+        context.FileTypeByExtension[".ps1"] = new RCFileType("Powershell", "<#", "#>");
+        context.FileTypeByExtension[".js"] = new RCFileType("Javascript", "/*", "*/");
+        context.FileTypeByExtension[".jsx"] = new RCFileType("Javascript", "/*", "*/");
+        context.FileTypeByExtension[".ts"] = new RCFileType("Typescript", "/*", "*/");
+        context.FileTypeByExtension[".tsx"] = new RCFileType("Typescript", "/*", "*/");
+        context.FileTypeByExtension[".cs"] = new RCFileType("c#", "/*", "*/");
+        context.FileTypeByExtension[".sql"] = new RCFileType("SQL", "/*", "*/");
+        context.FileTypeByExtension[".html"] = new RCFileType("HTML", "<!--", "-->");
+        context.FileTypeByExtension[".*"] = new RCFileType("Default", "/*", "*/");
     }
 
     public void AddPlaceholder(
@@ -60,11 +58,15 @@ public sealed class RCService {
 
     public void AddPlaceholderDirectory(
         RCContext context,
-        string directoryPath) {
+        string directoryPath,
+        bool optional) {
         if (!System.IO.Path.IsPathFullyQualified(directoryPath)) {
             directoryPath = System.IO.Path.GetFullPath(directoryPath);
         }
         if (!System.IO.Directory.Exists(directoryPath)) {
+            if (optional) {
+                return; // Optional directory, do nothing
+            }
             throw new System.IO.DirectoryNotFoundException($"Directory not found: {directoryPath}");
         }
         {
@@ -335,7 +337,7 @@ public sealed class RCService {
 
     public RCresultBool GetDiffFile(RCContext context, RCContent content) {
         if (!(content.FilePath is { Length: > 0 } filePath)) { return RCresultBool.NotPossible; }
-        content.NextFilePath = filePath + ".next";
+        content.NextFilePath = filePath + ".temp";
         if (content.Modified && content.NextContent is { Length: > 0 } nextContent) {
             System.IO.File.WriteAllText(content.NextFilePath, nextContent);
             return RCresultBool.True;
@@ -360,7 +362,7 @@ public sealed class RCService {
         if (!(content.FilePath is { Length: > 0 } filePath)) {
             return;
         }
-        if (content.Modified) { 
+        if (content.Modified) {
             if (content.NextContent is { Length: > 0 } nextContent) {
                 System.IO.File.WriteAllText(filePath, nextContent);
             }

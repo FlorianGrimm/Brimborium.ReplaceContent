@@ -1,5 +1,3 @@
-using System.Threading.Tasks;
-
 using DiffEngine;
 
 using Microsoft.Extensions.Configuration;
@@ -21,6 +19,10 @@ public class AppParameters {
 
 public class Program {
     public static async Task<int> Main(string[] args) {
+        var appParameters = new AppParameters();
+        return await Program.Run(args, appParameters).ConfigureAwait(false);
+    }
+    public static async Task<int> Run(string[] args, AppParameters appParameters) {
         var configurationBuilder = new Microsoft.Extensions.Configuration.ConfigurationBuilder();
         configurationBuilder.AddCommandLine(args);
         configurationBuilder.AddEnvironmentVariables();
@@ -43,24 +45,34 @@ public class Program {
         servicesBuilder.AddSingleton<RCService>();
         var serviceProvider = servicesBuilder.BuildServiceProvider();
 
-        var appParameters = new AppParameters();
         configuration.Bind(appParameters);
 
         var replaceContentService = serviceProvider.GetRequiredService<RCService>();
         var context = replaceContentService.NewContext();
-        replaceContentService.Initialize(context);
 
         if (appParameters.FileType is { Count: > 0 } appFileType) {
             foreach (var kvp in appFileType) {
                 context.FileTypeByExtension[kvp.Key] = kvp.Value;
             }
-        } else
+        } else { 
+            replaceContentService.InitializeFileTypeByExtension(context);
+        }
 
-            replaceContentService.AddPlaceholderDirectory(context, appParameters.ReplacementsDirectory);
+        replaceContentService.AddPlaceholderDirectory(context, appParameters.ReplacementsDirectory, true);
+
+        if (appParameters.File is null && appParameters.Directory is null) {
+            var locationDirectory = System.IO.Path.GetDirectoryName(typeof(Program).Assembly.Location);
+            var currentDirectory = System.Environment.CurrentDirectory;
+            if (string.Equals(locationDirectory, currentDirectory, StringComparison.OrdinalIgnoreCase)) {
+                // do nothing
+            } else {
+                appParameters.Directory = currentDirectory;
+            }
+        }
+
         int result = 0;
         if (appParameters.File is { Length: > 0 } filePath) {
             replaceContentService.AddContentFile(context, filePath);
-
         }
         if (appParameters.Directory is { Length: > 0 } directoryPath) {
             if (appParameters.FileExtensions is { Length: > 0 } fileExtensions && ".*" != fileExtensions) {
@@ -85,8 +97,13 @@ public class Program {
                         Console.WriteLine($"- {diff.FilePath}");
                     }
                 }
-                foreach(var diff in listDiff) {
-                    var launchResult=await DiffEngine.DiffRunner.LaunchForTextAsync(tempFile: "", targetFile: "");
+                foreach (var diff in listDiff) {
+                    if (diff.NextFilePath is null || diff.FilePath is null) {
+                        continue;
+                    }
+                    var launchResult = await DiffEngine.DiffRunner.LaunchForTextAsync(
+                        tempFile: diff.NextFilePath,
+                        targetFile: diff.FilePath);
                     switch (launchResult) {
                         case LaunchResult.NoEmptyFileForExtension:
                             break;

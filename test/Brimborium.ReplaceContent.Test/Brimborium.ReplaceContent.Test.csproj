@@ -4,27 +4,16 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Data\DataClass.cs" />
-    <Compile Remove="Data\DataGenerator.cs" />
-    <Compile Remove="Data\DependencyInjectionClassConstructor.cs" />
-    <Compile Remove="Tests2.cs" />
-    <Compile Remove="Tests3.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="Data\DataClass.cs" />
-    <None Include="Data\DataGenerator.cs" />
-    <None Include="Data\DependencyInjectionClassConstructor.cs" />
-    <None Include="Tests2.cs" />
-    <None Include="Tests3.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="TUnit" Version="0.23.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Brimborium.ReplaceContent.Library\Brimborium.ReplaceContent.Library.csproj" />
+    <ProjectReference Include="..\..\src\Brimborium.ReplaceContent\Brimborium.ReplaceContent.csproj" />
   </ItemGroup>
 
 </Project>

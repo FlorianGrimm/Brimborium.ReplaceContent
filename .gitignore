@@ -410,3 +410,4 @@ FodyWeavers.xsd
 *.received/
 
 Output/
+/test/Brimborium.ReplaceContent.Test/Test*/Act

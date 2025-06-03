@@ -1,12 +1,15 @@
-﻿using Brimborium.ReplaceContent.Test.Data;
+﻿using System.Runtime.CompilerServices;
 
 namespace Brimborium.ReplaceContent.Test;
+
 public class Tests {
     [Test]
     public async Task Test001() {
-        var arrangePath = @"D:\github.com\FlorianGrimm\Brimborium.ReplaceContent\test\Brimborium.ReplaceContent.Test\Test001\Arrange";
-        var actPath = @"D:\github.com\FlorianGrimm\Brimborium.ReplaceContent\test\Brimborium.ReplaceContent.Test\Test001\Act";
-        var assertPath = @"D:\github.com\FlorianGrimm\Brimborium.ReplaceContent\test\Brimborium.ReplaceContent.Test\Test001\Assert";
+        var testPath=System.IO.Path.Combine(GetProjectDirectory(), "Test001");
+        var arrangePath = System.IO.Path.Combine(testPath, "Arrange");
+        var actPath = System.IO.Path.Combine(testPath, "Act");
+        var assertPath = System.IO.Path.Combine(testPath, "Assert");
+
         System.IO.DirectoryInfo diArrange = new System.IO.DirectoryInfo(arrangePath);
         System.IO.DirectoryInfo diAct = new System.IO.DirectoryInfo(actPath);
         System.IO.DirectoryInfo diAssert = new System.IO.DirectoryInfo(assertPath);
@@ -23,18 +26,30 @@ public class Tests {
         }
 
         // invoke tool
+        AppParameters appParameters=new AppParameters {
+            Directory = diAct.FullName,
+            ReplacementsDirectory = System.IO.Path.Combine(diAct.FullName, "Replacements"),
+            Write = true,
+            Verbose = true
+        };
+
+        await Brimborium.ReplaceContent.Program.Run(new string[] { }, appParameters);
 
         // compare files in Act and Assert directories
-        foreach (var fi in diAct.GetFiles()) {
-            var fileName = System.IO.Path.Combine(diAssert.FullName, fi.Name);
-            if (System.IO.File.Exists(fileName)) {
-                var contentAct = await System.IO.File.ReadAllTextAsync(fi.FullName);
-                var contentAssert = await System.IO.File.ReadAllTextAsync(fileName);
+        foreach (var fiAssert in diAssert.GetFiles()) {
+            var fileNameAct = System.IO.Path.Combine(diAct.FullName, fiAssert.Name);
+            if (System.IO.File.Exists(fileNameAct)) {
+                var contentAct = await System.IO.File.ReadAllTextAsync(fileNameAct);
+                var contentAssert = await System.IO.File.ReadAllTextAsync(fiAssert.FullName);
                 await Assert.That(contentAct).IsEqualTo(contentAssert);
             } else {
-                Assert.Fail($"File {fi.Name} does not exist in Assert directory.");
+                Assert.Fail($"File {fiAssert.Name} does not exist in Assert directory.");
             }
         }
+    }
+
+    private static string GetProjectDirectory([CallerFilePath] string callerFilePath = "") {
+        return System.IO.Path.GetDirectoryName(callerFilePath) ?? throw new ArgumentException(nameof(callerFilePath));
     }
 
     /*
