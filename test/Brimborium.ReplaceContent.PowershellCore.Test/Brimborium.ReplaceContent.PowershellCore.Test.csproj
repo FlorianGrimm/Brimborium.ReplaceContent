@@ -14,5 +14,6 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <RootNamespace>Brimborium.ReplaceContent.Library</RootNamespace>
   </PropertyGroup>
 </Project>
