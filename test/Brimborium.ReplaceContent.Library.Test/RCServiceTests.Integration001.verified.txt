@@ -5,53 +5,89 @@
     CommentStart: /*,
     CommentEnd: */
   },
-  CurrentContent:
+  CurrentContent: {
+    Text:
 aaaaaaaaa
   /* <Placeholder TestPlaceholder> */
     bbbbbbbbb
   /* </Placeholder TestPlaceholder> */
 ccccccccc,
-  NextContent:
+    IsEmpty: false
+  },
+  NextContent: {
+    Text:
 aaaaaaaaa
   /* <Placeholder TestPlaceholder> */
   TestReplacement
   /* </Placeholder TestPlaceholder> */
 ccccccccc,
+    IsEmpty: false
+  },
   ParseResult: {
     ListPart: [
       {
         PartType: ConstantText,
-        OldContent:
+        OldContent: {
+          Text:
 aaaaaaaaa
-  
+  ,
+          IsEmpty: false
+        }
       },
       {
         PartType: PlaceholderStart,
-        OldContent:
+        OldContent: {
+          Text:
 /* <Placeholder TestPlaceholder> */
 ,
-        PlaceholderName: TestPlaceholder,
-        Indentation:   
+          IsEmpty: false
+        },
+        PlaceholderName: {
+          Text: TestPlaceholder,
+          IsEmpty: false
+        },
+        Indentation: {
+          Text:   ,
+          IsEmpty: false
+        }
       },
       {
         PartType: PlaceholderContent,
-        OldContent:
+        OldContent: {
+          Text:
     bbbbbbbbb
 ,
-        PlaceholderName: TestPlaceholder,
-        NextContent:
+          IsEmpty: false
+        },
+        PlaceholderName: {
+          Text: TestPlaceholder,
+          IsEmpty: false
+        },
+        NextContent: {
+          Text:
   TestReplacement
-
+,
+          IsEmpty: false
+        }
       },
       {
         PartType: PlaceholderEnd,
-        OldContent:   /* </Placeholder TestPlaceholder> */,
-        PlaceholderName: TestPlaceholder
+        OldContent: {
+          Text:   /* </Placeholder TestPlaceholder> */,
+          IsEmpty: false
+        },
+        PlaceholderName: {
+          Text: TestPlaceholder,
+          IsEmpty: false
+        }
       },
       {
         PartType: ConstantText,
-        OldContent:
-ccccccccc
+        OldContent: {
+          Text:
+ccccccccc,
+          IsEmpty: false
+        }
       }
     ],
     IsValid: true

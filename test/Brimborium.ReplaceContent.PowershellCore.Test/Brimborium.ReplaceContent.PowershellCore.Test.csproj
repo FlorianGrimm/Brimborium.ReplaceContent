@@ -1,4 +1,12 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <Compile Remove="Tests.Show_ReplaceContent_Example1\**\*.cs" />
+    <Compile Remove="Tests.Update_ReplaceContent_Example1\**\*.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Tests.Show_ReplaceContent_Example1\**\*.cs" />
+    <None Include="Tests.Update_ReplaceContent_Example1\**\*.cs" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Brimborium.ReplaceContent.PowershellCore\Brimborium.ReplaceContent.PowershellCore.csproj" />
     <ProjectReference Include="..\..\src\Brimborium.ReplaceContent.Library\Brimborium.ReplaceContent.Library.csproj" />
@@ -14,6 +22,6 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <RootNamespace>Brimborium.ReplaceContent.Library</RootNamespace>
+    <RootNamespace>Brimborium.ReplaceContent</RootNamespace>
   </PropertyGroup>
 </Project>

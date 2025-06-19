@@ -1,4 +1,4 @@
-﻿namespace Brimborium.ReplaceContent;
+namespace Brimborium.ReplaceContent;
 
 /// <summary>
 /// Represents content to be processed for placeholder replacement.
@@ -35,12 +35,12 @@ public sealed class RCContent {
     /// <summary>
     /// Gets or sets the current content before processing.
     /// </summary>
-    public string? CurrentContent { get; set; }
+    public StringSlice? CurrentContent { get; set; }
 
     /// <summary>
     /// Gets or sets the content after placeholder replacement.
     /// </summary>
-    public string? NextContent { get; set; }
+    public StringSlice? NextContent { get; set; }
 
     /// <summary>
     /// Gets the parse result containing placeholder information.

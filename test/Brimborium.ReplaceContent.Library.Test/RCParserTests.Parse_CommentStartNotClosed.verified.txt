@@ -2,24 +2,39 @@
   ListPart: [
     {
       PartType: PlaceholderContent,
-      OldContent:
+      OldContent: {
+        Text:
 aaaaaaaaa
 /* <Placeholder TestPlaceholder>
 bbbbbbbbb
 ,
+        IsEmpty: false
+      },
       ErrorMessage: TestPlaceholder expected,  found.,
-      PlaceholderName: TestPlaceholder
+      PlaceholderName: {
+        Text: TestPlaceholder,
+        IsEmpty: false
+      }
     },
     {
       PartType: PlaceholderEnd,
-      OldContent: /* </Placeholder TestPlaceholder> */,
+      OldContent: {
+        Text: /* </Placeholder TestPlaceholder> */,
+        IsEmpty: false
+      },
       ErrorMessage: TestPlaceholder expected,  found.,
-      PlaceholderName: TestPlaceholder
+      PlaceholderName: {
+        Text: TestPlaceholder,
+        IsEmpty: false
+      }
     },
     {
       PartType: ConstantText,
-      OldContent:
-ccccccccc
+      OldContent: {
+        Text:
+ccccccccc,
+        IsEmpty: false
+      }
     }
   ],
   IsValid: false

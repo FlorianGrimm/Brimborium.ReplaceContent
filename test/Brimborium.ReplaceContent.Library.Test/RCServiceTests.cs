@@ -1,10 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace Brimborium.ReplaceContent;
+
 public class RCServiceTests {
     [Test]
     public async Task Integration001() {
@@ -26,6 +21,10 @@ public class RCServiceTests {
         rcService.Scan(context, content);
         rcService.Replace(context, content);
         rcService.GenerateNextContent(context, content);
-        await Verify(content);
+
+        var settings = new VerifySettings();
+        settings.IgnoreMembers<StringSlice>(x => x.Range);
+        settings.IgnoreMembers<StringSlice>(x => x.Length);
+        await Verify(content, settings);
     }
 }

@@ -2,34 +2,61 @@
   ListPart: [
     {
       PartType: ConstantText,
-      OldContent:
+      OldContent: {
+        Text:
 aaaaaaaaa
-    
+    ,
+        IsEmpty: false
+      }
     },
     {
       PartType: PlaceholderStart,
-      OldContent:
+      OldContent: {
+        Text:
 /* <Placeholder TestPlaceholder> */
 ,
-      PlaceholderName: TestPlaceholder,
-      Indentation:     
+        IsEmpty: false
+      },
+      PlaceholderName: {
+        Text: TestPlaceholder,
+        IsEmpty: false
+      },
+      Indentation: {
+        Text:     ,
+        IsEmpty: false
+      }
     },
     {
       PartType: PlaceholderContent,
-      OldContent:
+      OldContent: {
+        Text:
         bbbbbbbbb
 ,
-      PlaceholderName: TestPlaceholder
+        IsEmpty: false
+      },
+      PlaceholderName: {
+        Text: TestPlaceholder,
+        IsEmpty: false
+      }
     },
     {
       PartType: PlaceholderEnd,
-      OldContent:     /* </Placeholder TestPlaceholder> */,
-      PlaceholderName: TestPlaceholder
+      OldContent: {
+        Text:     /* </Placeholder TestPlaceholder> */,
+        IsEmpty: false
+      },
+      PlaceholderName: {
+        Text: TestPlaceholder,
+        IsEmpty: false
+      }
     },
     {
       PartType: ConstantText,
-      OldContent:
-ccccccccc
+      OldContent: {
+        Text:
+ccccccccc,
+        IsEmpty: false
+      }
     }
   ],
   IsValid: true

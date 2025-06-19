@@ -1,4 +1,4 @@
-﻿using System.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 
 namespace Brimborium.ReplaceContent.Test;
 
@@ -12,6 +12,12 @@ public class Tests {
     [Test]
     public async Task Test002() {
         var testPath = System.IO.Path.Combine(GetProjectDirectory(), "Test002");
+        await RunTest(testPath);
+    }
+
+    [Test]
+    public async Task Test003() {
+        var testPath = System.IO.Path.Combine(GetProjectDirectory(), "Test003");
         await RunTest(testPath);
     }
 

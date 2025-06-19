@@ -1,7 +1,3 @@
-using System.Diagnostics.Metrics;
-
-using Brimborium.Text;
-
 namespace Brimborium.ReplaceContent;
 
 /// <summary>
@@ -22,16 +18,25 @@ public static class RCParser {
     /// <param name="commentStart">The string that marks the start of a comment.</param>
     /// <param name="commentEnd">The string that marks the end of a comment.</param>
     /// <returns>A <see cref="RCParseResult"/> containing the parsed parts.</returns>
-    public static RCParseResult Parse(string currentContent, string commentStart, string commentEnd) {
+    public static RCParseResult Parse(StringSlice? currentContent, string commentStart, string commentEnd) {
         List<RCPart> result = new();
-        if (!(currentContent is { Length: > 0 })) { return new RCParseResult(result); }
 
-        StringSlice content = currentContent.AsStringSlice();
+        if (!(currentContent is { Length: > 0 } content)) { return new RCParseResult(result); }
+
         StringSlice commentStartAsSlice = commentStart.AsStringSlice();
         StringSlice commentEndAsSlice = commentEnd.AsStringSlice();
-        string? currentPlaceholderName = null;
+
+        var currentListAST = result;
+        Stack<List<RCPart>> stackAST = new();
+        stackAST.Push(currentListAST);
+
+        string ? currentPlaceholderName = null;
+        Stack<string?> stackPlaceholderName = new ();
+        stackPlaceholderName.Push(null);
+        
         string? currentIndentation = null;
         var contentAfterLastFind = content;
+        
         while (0 < content.Length) {
             if (content.TryFind(commentStartAsSlice, out var foundCommentStart, StringComparison.Ordinal)) {
                 // foundCommentStart=|/*| xxx */
@@ -53,7 +58,7 @@ public static class RCParser {
                             // contentBeforeComment=|>...<|/*
                             var contentBeforeComment = contentAfterLastFind.SubstringBetweenStartAndStart(foundCommentStart.Found);
                             if (0 < contentBeforeComment.Length) {
-                                result.Add(
+                                currentListAST.Add(
                                     new RCPart(
                                         partType: RCPartType.ConstantText,
                                         oldContent: contentBeforeComment.ToString(),
@@ -78,15 +83,17 @@ public static class RCParser {
                             // contentPlaceholderName = =<Placeholder |>xxx<|>
                             var contentPlaceholderName = contentPayload[new Range(new Index(_PlaceholderStartStart.Length, false), new Index(_PlaceholderStartEnd.Length, true))]
                                 .Trim().ToString();
-                            currentPlaceholderName = contentPlaceholderName;
+                            stackPlaceholderName.Push(currentPlaceholderName = contentPlaceholderName);
 
                             //foundCommentEnd.BeforeAndFound
-                            result.Add(new RCPart(
+                            var currentAST=(new RCPart(
                                     partType: RCPartType.PlaceholderStart,
                                     oldContent: contentCompletePlaceholder.ToString(),
                                     errorMessage: null,
                                     placeholderName: contentPlaceholderName,
                                     indentation: currentIndentation));
+                            currentListAST.Add(currentAST);
+                            stackAST.Push(currentListAST = currentAST.ListAST);
                             content = contentAfterLastFind = commentEndAfterWithoutTrailingWS;
 
                         } else if (contentPayload.StartsWith(_PlaceholderEndStart) && contentPayload.EndsWith(_PlaceholderEndEnd)) {
@@ -111,8 +118,18 @@ public static class RCParser {
                                 errorMessage = $"{contentPlaceholderName} expected, {currentPlaceholderName} found.";
                             }
 
+                            stackPlaceholderName.Pop();
+                            if (!stackPlaceholderName.TryPeek(out currentPlaceholderName)) {
+                                errorMessage ??= $"inbalacned nested Placeholder";
+                            }
+                            stackAST.Pop();
+                            if (!stackAST.TryPeek(out currentListAST)) {
+                                errorMessage ??= "inbalanced nested Placeholder";
+                                currentListAST ??= result;
+                            }
+
                             if (0 < contentBeforeComment.Length) {
-                                result.Add(
+                                currentListAST.Add(
                                     new RCPart(
                                         partType: RCPartType.PlaceholderContent,
                                         oldContent: contentBeforeComment.ToString(),
@@ -121,7 +138,7 @@ public static class RCParser {
                                         indentation: null));
                             }
 
-                            result.Add(
+                            currentListAST.Add(
                                 new RCPart(
                                     partType: RCPartType.PlaceholderEnd,
                                     oldContent: contentCompletePlaceholder.ToString(),
@@ -129,7 +146,6 @@ public static class RCParser {
                                     placeholderName: contentPlaceholderName,
                                     indentation: null));
 
-                            currentPlaceholderName = null;
                             content = contentAfterLastFind = foundCommentEnd.After;
                             //content = contentAfterLastFind = commentEndAfterWithoutTrailingWS;
                         } else {
@@ -147,7 +163,7 @@ public static class RCParser {
         // No comment start found, treat the rest as constant text
         if (contentAfterLastFind.Length > 0) {
             if (currentPlaceholderName is not null) {
-                result.Add(
+                currentListAST.Add(
                     new RCPart(
                         partType: RCPartType.ConstantText,
                         oldContent: contentAfterLastFind.ToString(),
@@ -155,7 +171,7 @@ public static class RCParser {
                         placeholderName: null,
                         indentation: null));
             } else {
-                result.Add(
+                currentListAST.Add(
                     new RCPart(
                         partType: RCPartType.ConstantText,
                         oldContent: contentAfterLastFind.ToString(),
@@ -170,6 +186,6 @@ public static class RCParser {
             throw new ArgumentException("Content could not be parsed completely. Remaining content: " + content.ToString(), nameof(currentContent));
         }
 
-        return new RCParseResult(result);
+        return new RCParseResult(currentListAST);
     }
 }
