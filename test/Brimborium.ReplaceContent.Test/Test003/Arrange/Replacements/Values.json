@@ -1,0 +1,4 @@
+{
+  "Greeting": "Hello\r\n    /* <Placeholder TestPlaceholder> */\r\nOld World\r\n    /* </Placeholder TestPlaceholder> */",
+  "TestPlaceholder": "New World"
+}

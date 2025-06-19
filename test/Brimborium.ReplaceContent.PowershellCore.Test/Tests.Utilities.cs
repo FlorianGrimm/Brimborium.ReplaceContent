@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Brimborium.ReplaceContent.Library;
+namespace Brimborium.ReplaceContent;
 
 public partial class Tests {
     internal record class TestResult(
@@ -21,9 +14,11 @@ public partial class Tests {
         }
     }
 
-    private TestResult RunPowershellTest([CallerMemberName] string testName = "") {
+    private async ValueTask<TestResult> RunPowershellTest([CallerMemberName] string testName = "") {
         if (string.IsNullOrEmpty(testName)) { throw new ArgumentException(nameof(testName)); }
 
+        var solutionPath = GetSolutionRoot();
+        var outputModulePath = System.IO.Path.Combine(solutionPath, "output", "Brimborium.ReplaceContent.psd1");
         var projectPath = GetProjectPath();
 
         // load
@@ -40,12 +35,48 @@ public partial class Tests {
                 throw new FileNotFoundException(filePath);
             }
             powershellContent = System.IO.File.ReadAllText(filePath);
+            powershellContent = powershellContent.Replace("Set-StrictMode -Version Latest", "").Replace("Import-Module 'Brimborium.ReplaceContent'", "");
         }
 
         // ensure CurrentDirectory is projectPath
-        if (!string.Equals(System.Environment.CurrentDirectory, projectPath, StringComparison.OrdinalIgnoreCase)) {
-            System.Environment.CurrentDirectory = projectPath;
+        var testFolderName = testName.EndsWith(".ps1")
+            ? testName.Substring(0, testName.Length-4)
+            : $"Tests.{testName}";
+
+        var testPath = System.IO.Path.Combine(projectPath, testFolderName);
+        if (System.IO.Directory.Exists(testPath)) {
+            var arrangePath = System.IO.Path.Combine(testPath, "Arrange");
+            var actPath = System.IO.Path.Combine(testPath, "Act");
+            var assertPath = System.IO.Path.Combine(testPath, "Assert");
+
+            System.IO.DirectoryInfo diArrange = new System.IO.DirectoryInfo(arrangePath);
+            System.IO.DirectoryInfo diAct = new System.IO.DirectoryInfo(actPath);
+            System.IO.DirectoryInfo diAssert = new System.IO.DirectoryInfo(assertPath);
+
+            // create the Assert directory if it does not exist
+            if (!diAct.Exists) { diAct.Create(); }
+
+            // copy files from Arrange to Act directory
+            foreach (var di in diArrange.GetDirectories()) {
+                diAct.CreateSubdirectory(di.Name);
+            }
+            var arrangeFullName = diArrange.FullName;
+            foreach (var fi in diArrange.GetFiles("*.*", new EnumerationOptions() { RecurseSubdirectories = true })) {
+                if (fi.FullName.StartsWith(arrangeFullName)) {
+                    var relativePath = fi.FullName.Substring(arrangeFullName.Length).TrimStart('\\', '/');
+                    fi.CopyTo(System.IO.Path.Combine(diAct.FullName, relativePath), true);
+                }
+            }
+            if (!string.Equals(System.Environment.CurrentDirectory, actPath, StringComparison.OrdinalIgnoreCase)) {
+                System.Environment.CurrentDirectory = actPath;
+            }
+
+        } else {
+            if (!string.Equals(System.Environment.CurrentDirectory, projectPath, StringComparison.OrdinalIgnoreCase)) {
+                System.Environment.CurrentDirectory = projectPath;
+            }
         }
+
         bool success = false;
         List<object> listOutput = new();
         List<object> listError = new();
@@ -53,6 +84,8 @@ public partial class Tests {
         using (var powershell = System.Management.Automation.PowerShell.Create(
             System.Management.Automation.RunspaceMode.NewRunspace)) {
             powershell.AddScript("Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process");
+            powershell.AddScript("Set-StrictMode -Version Latest");
+            powershell.AddScript($"Import-Module '{outputModulePath}'");
             powershell.AddScript(powershellContent);
             try {
                 // Execute the powershell script
@@ -78,6 +111,30 @@ public partial class Tests {
                 }
             }
         }
+        if (success) {
+            if (System.IO.Directory.Exists(testPath)) {
+                var arrangePath = System.IO.Path.Combine(testPath, "Arrange");
+                var actPath = System.IO.Path.Combine(testPath, "Act");
+                var assertPath = System.IO.Path.Combine(testPath, "Assert");
+
+                System.IO.DirectoryInfo diArrange = new System.IO.DirectoryInfo(arrangePath);
+                System.IO.DirectoryInfo diAct = new System.IO.DirectoryInfo(actPath);
+                System.IO.DirectoryInfo diAssert = new System.IO.DirectoryInfo(assertPath);
+
+
+                // compare files in Act and Assert directories
+                foreach (var fiAssert in diAssert.GetFiles()) {
+                    var fileNameAct = System.IO.Path.Combine(diAct.FullName, fiAssert.Name);
+                    if (System.IO.File.Exists(fileNameAct)) {
+                        var contentAct = System.IO.File.ReadAllTextAsync(fileNameAct);
+                        var contentAssert = await System.IO.File.ReadAllTextAsync(fiAssert.FullName);
+                        await Assert.That(contentAct).IsEqualTo(contentAssert);
+                    } else {
+                        Assert.Fail($"File {fiAssert.Name} does not exist in Assert directory.");
+                    }
+                }
+            }
+        }
         return new TestResult(success, listOutput, listError);
     }
 
@@ -91,5 +148,13 @@ public partial class Tests {
                 ) ?? throw new ArgumentException(nameof(callerFilePath));
             return _GetProjectPathCache = result;
         }
+    }
+
+    private static string GetSolutionRoot([CallerFilePath] string? callerFilePath = default) {
+        var result = callerFilePath ?? string.Empty;
+        for (int i = 0; (i < 3) && !string.IsNullOrEmpty(result); i++) {
+            result = System.IO.Path.GetDirectoryName(result);
+        }
+        return result ?? string.Empty;
     }
 }

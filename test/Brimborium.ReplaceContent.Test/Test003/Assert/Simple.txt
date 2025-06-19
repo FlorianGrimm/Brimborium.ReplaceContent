@@ -1,0 +1,7 @@
+/* <Placeholder Greeting> */
+Hello
+    /* <Placeholder TestPlaceholder> */
+    New World
+    /* </Placeholder TestPlaceholder> */
+/* </Placeholder Greeting> */
+!

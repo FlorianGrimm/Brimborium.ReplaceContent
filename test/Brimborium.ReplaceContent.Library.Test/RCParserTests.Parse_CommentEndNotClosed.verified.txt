@@ -2,23 +2,13 @@
   ListPart: [
     {
       PartType: ConstantText,
-      OldContent:
-aaaaaaaaa
-
-    },
-    {
-      PartType: PlaceholderStart,
-      OldContent:
-/* <Placeholder TestPlaceholder> */
-,
-      PlaceholderName: TestPlaceholder
-    },
-    {
-      PartType: ConstantText,
-      OldContent:
+      OldContent: {
+        Text:
 bbbbbbbbb
 /* </Placeholder TestPlaceholder>
 ccccccccc,
+        IsEmpty: false
+      },
       ErrorMessage: TestPlaceholder is still open
     }
   ],

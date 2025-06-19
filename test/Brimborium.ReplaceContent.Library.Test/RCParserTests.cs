@@ -1,3 +1,5 @@
+using Brimborium.Text;
+
 namespace Brimborium.ReplaceContent;
 
 public class RCParserTests {
@@ -17,6 +19,8 @@ public class RCParserTests {
 
         var settings = new VerifySettings();
         settings.IgnoreMembers<RCPart>(x => x.NextContent);
+        settings.IgnoreMembers<StringSlice>(x => x.Range);
+        settings.IgnoreMembers<StringSlice>(x => x.Length);
         await Verify(result, settings);
     }
 
@@ -35,6 +39,8 @@ public class RCParserTests {
 
         var settings = new VerifySettings();
         settings.IgnoreMembers<RCPart>(x => x.NextContent);
+        settings.IgnoreMembers<StringSlice>(x => x.Range);
+        settings.IgnoreMembers<StringSlice>(x => x.Length);
         await Verify(result, settings);
     }
 
@@ -53,6 +59,8 @@ public class RCParserTests {
 
         var settings = new VerifySettings();
         settings.IgnoreMembers<RCPart>(x => x.NextContent);
+        settings.IgnoreMembers<StringSlice>(x => x.Range);
+        settings.IgnoreMembers<StringSlice>(x => x.Length);
         await Verify(result, settings);
     }
 
@@ -70,6 +78,8 @@ public class RCParserTests {
 
         var settings = new VerifySettings();
         settings.IgnoreMembers<RCPart>(x => x.NextContent);
+        settings.IgnoreMembers<StringSlice>(x => x.Range);
+        settings.IgnoreMembers<StringSlice>(x => x.Length);
         await Verify(result, settings);
     }
 
@@ -85,9 +95,12 @@ public class RCParserTests {
             """;
         var result = RCParser.Parse(content, "/*", "*/");
 
-        await Assert.That(result.ListPart.Count).IsEqualTo(3);
+        await Assert.That(result.ContainsError(out var error)).IsTrue();
+        await Assert.That(result.ListPart.Count).IsEqualTo(1);
         var settings = new VerifySettings();
         settings.IgnoreMembers<RCPart>(x => x.NextContent);
+        settings.IgnoreMembers<StringSlice>(x => x.Range);
+        settings.IgnoreMembers<StringSlice>(x => x.Length);
         await Verify(result, settings);
     }
 }

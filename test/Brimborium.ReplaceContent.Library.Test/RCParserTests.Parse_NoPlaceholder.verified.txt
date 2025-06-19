@@ -2,12 +2,15 @@
   ListPart: [
     {
       PartType: ConstantText,
-      OldContent:
+      OldContent: {
+        Text:
 aaaaaaaaa
 /* xx */
 bbbbbbbbb
 /* xx */
-ccccccccc
+ccccccccc,
+        IsEmpty: false
+      }
     }
   ],
   IsValid: true

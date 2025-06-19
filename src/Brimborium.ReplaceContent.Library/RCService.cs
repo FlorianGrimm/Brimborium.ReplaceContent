@@ -1,5 +1,3 @@
-﻿using Brimborium.Text;
-
 namespace Brimborium.ReplaceContent;
 
 /// <summary>
@@ -42,7 +40,7 @@ public sealed class RCService {
         RCContext context,
         string placeholder,
         string replacement) {
-        context.Placeholders[placeholder] = replacement;
+        context.DictReplacement.AddString(placeholder, replacement);
     }
 
     /// <summary>
@@ -53,9 +51,7 @@ public sealed class RCService {
     public void AddPlaceholderDictionary(
         RCContext context,
         Dictionary<string, string> placeholderReplacement) {
-        foreach (var kvp in placeholderReplacement) {
-            this.AddPlaceholder(context, kvp.Key, kvp.Value);
-        }
+        context.DictReplacement.Add(placeholderReplacement);
     }
 
     /// <summary>
@@ -239,7 +235,6 @@ public sealed class RCService {
         if (!(fileType.CommentEnd is { Length: > 0 } commentEnd)) {
             return new RCPart(RCPartType.Error, string.Empty, "FileType.CommentEnd is empty.", null, null);
         }
-
         var parseResult = RCParser.Parse(content.CurrentContent, commentStart, commentEnd);
         if (parseResult.ContainsError(out var error)) {
             return error;
@@ -271,25 +266,40 @@ public sealed class RCService {
         if (content.ParseResult.ContainsError(out var error)) {
             // TODO: handle error
         } else {
-            var listPart = content.ParseResult.ListPart;
+            var currentListPart = content.ParseResult.ListPart;
             int index = 0;
-            while (index < listPart.Count) {
-                var part = listPart[index];
+            while (index < currentListPart.Count) {
+                var part = currentListPart[index];
                 if (part.PartType == RCPartType.ConstantText) {
                     index++;
                     continue;
                 } else if ((part.PartType == RCPartType.PlaceholderStart)
-                    && ((index + 2) < listPart.Count)) {
-                    var partContent = listPart[index + 1];
-                    var partEnd = listPart[index + 2];
+                    && ((index + 2) < currentListPart.Count)) {
+                    var partContent = currentListPart[index + 1];
+                    var partEnd = currentListPart[index + 2];
                     if (partContent.PartType == RCPartType.PlaceholderContent
                         && partEnd.PartType == RCPartType.PlaceholderEnd) {
 
                         if (part.PlaceholderName is { Length: > 0 } placeholderName) {
-                            if (context.Placeholders.TryGetValue(placeholderName, out var replacement)) {
-                                var oldContentSlice = partContent.OldContent.AsStringSlice();
+                            if (context.DictReplacement.TryGetValue(placeholderName, out var replacementValue)) {
+                                var oldContentSlice = partContent.OldContent;
                                 var oldContentEndsWithNewline = oldContentSlice.TrimEnd(_CrLf).SubstringBetweenEndAndEnd(oldContentSlice);
-                                var replacementSlice = replacement.AsStringSlice();
+                                RCPart? replacementPart = default;
+                                if (replacementValue.Part is { }) {
+                                    replacementPart = replacementValue.Part;
+                                } else if (replacementValue.Value is { } replacementValueValue) {
+                                    var replacementContent = new RCContent($"Replacement:{placeholderName}") {
+                                        FileType = content.FileType,
+                                        CurrentContent = replacementValueValue
+                                    };
+                                    replacementPart = this.Scan(context, replacementContent);
+                                    this.Replace(context, replacementContent);
+                                    this.GenerateNextContent(context, replacementContent);
+                                    if (replacementContent.NextContent is { } nextContent) { 
+                                        replacementValue = new() { Value = nextContent };
+                                    }
+                                }
+                                var replacementSlice = replacementValue.GetValue();
                                 if (part.Indentation is { Length: > 0 } indentation) {
                                     var result = NewlineTokenizer.Instance.Tokenize(replacementSlice);
 
@@ -310,16 +320,21 @@ public sealed class RCService {
                                     }
                                     partContent.NextContent = builder.ToString();
                                 } else {
-                                    if (!oldContentEndsWithNewline.IsEmpty) {
-                                        if (replacementSlice.TrimEnd(_CrLf).SubstringBetweenEndAndEnd(replacementSlice).IsEmpty) {
-                                            // no newline at the end of replacement
-                                            replacement = replacement + oldContentEndsWithNewline;
-                                        }
+                                    if ((!oldContentEndsWithNewline.IsEmpty)
+                                        && (replacementSlice.TrimEnd(_CrLf).SubstringBetweenEndAndEnd(replacementSlice).IsEmpty)) {
+                                        // no newline at the end of replacement
+                                        var replacement = replacementSlice.ToString() + oldContentEndsWithNewline;
+                                        partContent.NextContent = replacement;
+                                    } else {
+                                        partContent.NextContent = replacementSlice;
                                     }
-                                    partContent.NextContent = replacement;
                                 }
                                 if (!content.Modified) {
-                                    content.Modified = string.Equals(partContent.OldContent, partContent.NextContent, StringComparison.Ordinal);
+                                    content.Modified = (partContent.NextContent is { } nextContentValue)
+                                        ? !partContent.OldContent.Equals(
+                                            nextContentValue,
+                                            StringComparison.Ordinal)
+                                        : !part.OldContent.IsEmpty;
                                 }
                             }
                         }
@@ -345,7 +360,8 @@ public sealed class RCService {
         if (!hasPlaceholder) {
             foreach (var part in content.ParseResult.ListPart) {
                 if (part.NextContent is { } partNextContent) {
-                    if (string.Equals(content.CurrentContent, partNextContent, StringComparison.Ordinal)) {
+                    if (content.CurrentContent is { } currentContent
+                        && partNextContent.Equals(currentContent, StringComparison.Ordinal)) {
                         // No changes here
                     } else {
                         hasPlaceholder = true;
@@ -375,11 +391,12 @@ public sealed class RCService {
                 nextContent = sbNextContent.ToString();
             }
 
-            if (string.Equals(nextContent, content.CurrentContent, StringComparison.Ordinal)) {
+            if (content.CurrentContent is { } currentContent
+                && currentContent.Equals(nextContent.AsStringSlice(), StringComparison.Ordinal)) {
                 content.NextContent = null; // No changes
                 content.Modified = false;
             } else {
-                content.NextContent = nextContent;
+                content.NextContent = nextContent.AsStringSlice();
                 content.Modified = true;
             }
         }
@@ -408,7 +425,7 @@ public sealed class RCService {
         foreach (var part in content.ParseResult.ListPart) {
             if (part.PartType == RCPartType.PlaceholderContent) {
                 if (part.NextContent is { Length: > 0 } nextContent) {
-                    if (string.Equals(part.OldContent, nextContent, StringComparison.Ordinal)) {
+                    if (nextContent.Equals(part.OldContent, StringComparison.Ordinal)) {
                         continue; // No change
                     }
                     // TODO: git diff style output
@@ -452,7 +469,7 @@ public sealed class RCService {
         if (!(content.FilePath is { Length: > 0 } filePath)) { return RCresultBool.NotPossible; }
         content.NextFilePath = filePath + ".temp";
         if (content.Modified && content.NextContent is { Length: > 0 } nextContent) {
-            System.IO.File.WriteAllText(content.NextFilePath, nextContent);
+            System.IO.File.WriteAllText(content.NextFilePath, nextContent.ToString());
             return RCresultBool.True;
         } else {
             if (System.IO.File.Exists(content.NextFilePath)) {
@@ -486,7 +503,7 @@ public sealed class RCService {
         }
         if (content.Modified) {
             if (content.NextContent is { Length: > 0 } nextContent) {
-                System.IO.File.WriteAllText(filePath, nextContent);
+                System.IO.File.WriteAllText(filePath, nextContent.AsSpan());
             }
         }
     }

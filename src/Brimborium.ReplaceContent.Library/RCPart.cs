@@ -1,5 +1,3 @@
-using Brimborium.Text;
-
 namespace Brimborium.ReplaceContent;
 
 /// <summary>
@@ -17,7 +15,7 @@ public class RCPart {
     /// <param name="indentation">The indentation string to be applied to replacement content.</param>
     public RCPart(
         RCPartType partType,
-        string oldContent,
+        StringSlice oldContent,
         string? errorMessage,
         string? placeholderName,
         string? indentation) {
@@ -32,31 +30,34 @@ public class RCPart {
     /// Gets the type of the part.
     /// </summary>
     public RCPartType PartType { get; }
-    
+
     /// <summary>
     /// Gets the original content of the part.
     /// </summary>
-    public string OldContent { get; }
-    
+    public StringSlice OldContent { get; }
+
     /// <summary>
     /// Gets an optional error message if there was an issue with this part.
     /// </summary>
     public string? ErrorMessage { get; }
-    
+
     /// <summary>
     /// Gets the name of the placeholder if this part is related to a placeholder.
     /// </summary>
-    public string? PlaceholderName { get; }
-    
+    public StringSlice PlaceholderName { get; }
+
     /// <summary>
     /// Gets the indentation string to be applied to replacement content.
     /// </summary>
-    public string? Indentation { get; }
-    
+    public StringSlice Indentation { get; }
+
     /// <summary>
     /// Gets or sets the content after placeholder replacement.
     /// </summary>
-    public string? NextContent { get; set; }
+    public StringSlice? NextContent { get; set; }
+
+    public List<RCPart> ListAST { get; } = new();
+
 
     /// <summary>
     /// Returns a string that represents the current object for debugging purposes.
@@ -69,23 +70,23 @@ public class RCPart {
         if (OldContent.Length <= 32) {
             result.Append(this.OldContent);
         } else {
-            result.Append(this.OldContent.AsStringSlice().Substring(0, 29)).Append("...");
+            result.Append(this.OldContent.Substring(0, 29)).Append("...");
         }
         result.Append(", ");
-        if (this.PlaceholderName is null) {
-            result.Append("NULL");
+        if (this.PlaceholderName.IsEmpty) {
+            result.Append("Empty");
         } else if (this.PlaceholderName.Length <= 32) {
             result.Append(this.PlaceholderName);
         } else {
-            result.Append(this.PlaceholderName.AsStringSlice().Substring(0, 29)).Append("...");
+            result.Append(this.PlaceholderName.Substring(0, 29)).Append("...");
         }
         result.Append(", ");
         if (this.NextContent is null) {
             result.Append("NULL");
-        } else if (this.NextContent.Length <= 32) {
-            result.Append(this.NextContent);
+        } else if (this.NextContent.Value.Length <= 32) {
+            result.Append(this.NextContent.Value);
         } else {
-            result.Append(this.NextContent.AsStringSlice().Substring(0, 29)).Append("...");
+            result.Append(this.NextContent.Value.Substring(0, 29)).Append("...");
         }
         return result.ToString();
     }
