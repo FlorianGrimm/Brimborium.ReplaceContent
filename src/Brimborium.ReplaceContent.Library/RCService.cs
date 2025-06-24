@@ -264,34 +264,43 @@ public sealed class RCService {
     /// <param name="content">The content to process.</param>
     public void Replace(RCContext context, RCContent content) {
         if (content.ParseResult.ContainsError(out var error)) {
-            // TODO: handle error
-        } else {
-            var currentListPart = content.ParseResult.ListPart;
+            return;
+        }
+        {
+            List<RCPart> currentListPart = content.ParseResult.ListPart;
+            Replace(context, content, currentListPart, 0, currentListPart.Count);
+#if no
             int index = 0;
             while (index < currentListPart.Count) {
                 var part = currentListPart[index];
                 if (part.PartType == RCPartType.ConstantText) {
+                    // Skip constant text parts as they don't need replacement
                     index++;
                     continue;
                 } else if ((part.PartType == RCPartType.PlaceholderStart)
                     && ((index + 2) < currentListPart.Count)) {
+                    // Check if we have a complete placeholder structure (start, content, end)
                     var partContent = currentListPart[index + 1];
                     var partEnd = currentListPart[index + 2];
                     if (partContent.PartType == RCPartType.PlaceholderContent
                         && partEnd.PartType == RCPartType.PlaceholderEnd) {
-
                         if (part.PlaceholderName is { Length: > 0 } placeholderName) {
+                            // Look up the replacement value for this placeholder
                             if (context.DictReplacement.TryGetValue(placeholderName, out var replacementValue)) {
+                                // Preserve newline at the end of original content if present
                                 var oldContentSlice = partContent.OldContent;
                                 var oldContentEndsWithNewline = oldContentSlice.TrimEnd(_CrLf).SubstringBetweenEndAndEnd(oldContentSlice);
                                 RCPart? replacementPart = default;
                                 if (replacementValue.Part is { }) {
+                                    // Use existing replacement part
                                     replacementPart = replacementValue.Part;
                                 } else if (replacementValue.Value is { } replacementValueValue) {
+                                    // Process the replacement value as content
                                     var replacementContent = new RCContent($"Replacement:{placeholderName}") {
                                         FileType = content.FileType,
                                         CurrentContent = replacementValueValue
                                     };
+                                    // Scan and process the replacement content for nested placeholders
                                     replacementPart = this.Scan(context, replacementContent);
                                     this.Replace(context, replacementContent);
                                     this.GenerateNextContent(context, replacementContent);
@@ -301,34 +310,40 @@ public sealed class RCService {
                                 }
                                 var replacementSlice = replacementValue.GetValue();
                                 if (part.Indentation is { Length: > 0 } indentation) {
+                                    // Apply indentation to each line of the replacement text
                                     var result = NewlineTokenizer.Instance.Tokenize(replacementSlice);
-
                                     StringSliceBuilder builder = new StringSliceBuilder();
                                     bool lastWasNewline = false;
                                     foreach (var token in result.ListTokens) {
                                         if (token.Kind == NewlineToken.Word) {
+                                            // Add indentation before each line
                                             builder.Append(indentation);
                                             builder.Append(token.Text);
                                             lastWasNewline = false;
                                         } else {
+                                            // Preserve newlines
                                             builder.Append(token.Text);
                                             lastWasNewline = true;
                                         }
                                     }
+                                    // Preserve trailing newline from original content if needed
                                     if ((!oldContentEndsWithNewline.IsEmpty) && !lastWasNewline) {
                                         builder.Append(oldContentEndsWithNewline);
                                     }
                                     partContent.NextContent = builder.ToString();
                                 } else {
+                                    // No indentation to apply, but still preserve newlines
                                     if ((!oldContentEndsWithNewline.IsEmpty)
                                         && (replacementSlice.TrimEnd(_CrLf).SubstringBetweenEndAndEnd(replacementSlice).IsEmpty)) {
-                                        // no newline at the end of replacement
+                                        // Add newline at the end if replacement doesn't have one but original did
                                         var replacement = replacementSlice.ToString() + oldContentEndsWithNewline;
                                         partContent.NextContent = replacement;
                                     } else {
                                         partContent.NextContent = replacementSlice;
                                     }
                                 }
+                                
+                                // Mark content as modified if the replacement is different from original
                                 if (!content.Modified) {
                                     content.Modified = (partContent.NextContent is { } nextContentValue)
                                         ? !partContent.OldContent.Equals(
@@ -339,12 +354,148 @@ public sealed class RCService {
                             }
                         }
 
+                        // Skip past the entire placeholder structure
                         index += 3;
+                        continue;
+                    } else {
+                        // Not a complete placeholder structure, move to next part
+                        index++;
+                        continue;
+                    }
+                }
+            }
+#endif
+        }
+    }
+
+    private void Replace(RCContext context, RCContent content, List<RCPart> currentListPart, int start, int end) {
+        {
+            int index = start;
+            while (index < end) {
+                var partCurrent = currentListPart[index];
+                if (partCurrent.PartType == RCPartType.ConstantText) {
+                    // Skip constant text parts as they don't need replacement
+                    index++;
+                    continue;
+                } else if (partCurrent.TryHasPartType(RCPartType.PlaceholderStart, out var partPlaceholderStart)) {
+                    // Check if we have a complete placeholder structure (start, content, end)
+                    if ((currentListPart.TryHasPartType(index + 1, RCPartType.PlaceholderContent, out var partPlaceholderContent))
+                        && (currentListPart.TryHasPartType(index + 2, RCPartType.PlaceholderEnd, out var partPlaceholderEnd))
+                        ) {
+                        if (partPlaceholderStart.IsEqualPlaceholderName(partPlaceholderEnd, out var placeholderName)) {
+                            // Look up the replacement value for this placeholder
+                            if (context.DictReplacement.TryGetValue(placeholderName, out var replacementValue)) {
+                                // Preserve newline at the end of original content if present
+                                var oldContentSlice = partPlaceholderContent.OldContent;
+                                var oldContentEndsWithNewline = oldContentSlice.TrimEnd(_CrLf).SubstringBetweenEndAndEnd(oldContentSlice);
+                                RCPart? replacementPart = default;
+                                if (replacementValue.Part is { }) {
+                                    // Use existing replacement part
+                                    replacementPart = replacementValue.Part;
+                                } else if (replacementValue.Value is { } replacementValueValue) {
+                                    // Process the replacement value as content
+                                    var replacementContent = new RCContent($"Replacement:{placeholderName}") {
+                                        FileType = content.FileType,
+                                        CurrentContent = replacementValueValue
+                                    };
+                                    // Scan and process the replacement content for nested placeholders
+                                    replacementPart = this.Scan(context, replacementContent);
+                                    this.Replace(context, replacementContent);
+                                    this.GenerateNextContent(context, replacementContent);
+                                    if (replacementContent.NextContent is { } nextContent) {
+                                        replacementValue = new() { Value = nextContent };
+                                    }
+                                }
+                                var replacementSlice = replacementValue.GetValue();
+                                if (partPlaceholderStart.Indentation is { Length: > 0 } indentation) {
+                                    // Apply indentation to each line of the replacement text
+                                    var result = NewlineTokenizer.Instance.Tokenize(replacementSlice);
+                                    StringSliceBuilder builder = new StringSliceBuilder();
+                                    bool lastWasNewline = false;
+                                    foreach (var token in result.ListTokens) {
+                                        if (token.Kind == NewlineToken.Word) {
+                                            // Add indentation before each line
+                                            builder.Append(indentation);
+                                            builder.Append(token.Text);
+                                            lastWasNewline = false;
+                                        } else {
+                                            // Preserve newlines
+                                            builder.Append(token.Text);
+                                            lastWasNewline = true;
+                                        }
+                                    }
+                                    // Preserve trailing newline from original content if needed
+                                    if ((!oldContentEndsWithNewline.IsEmpty) && !lastWasNewline) {
+                                        builder.Append(oldContentEndsWithNewline);
+                                    }
+                                    partPlaceholderContent.NextContent = builder.ToString();
+                                } else {
+                                    // No indentation to apply, but still preserve newlines
+                                    if ((!oldContentEndsWithNewline.IsEmpty)
+                                        && (replacementSlice.TrimEnd(_CrLf).SubstringBetweenEndAndEnd(replacementSlice).IsEmpty)) {
+                                        // Add newline at the end if replacement doesn't have one but original did
+                                        var replacement = replacementSlice.ToString() + oldContentEndsWithNewline;
+                                        partPlaceholderContent.NextContent = replacement;
+                                    } else {
+                                        partPlaceholderContent.NextContent = replacementSlice;
+                                    }
+                                }
+
+                                // Mark content as modified if the replacement is different from original
+                                if (!content.Modified) {
+                                    content.Modified = (partPlaceholderContent.NextContent is { } nextContentValue)
+                                        ? !partPlaceholderContent.OldContent.Equals(
+                                            nextContentValue,
+                                            StringComparison.Ordinal)
+                                        : !partPlaceholderStart.OldContent.IsEmpty;
+                                }
+                            }
+                        }
+                        // Skip past the entire placeholder structure
+                        index += 3;
+                        continue;
+                    } else {
+                        // Not a complete placeholder structure, move to next part
+                        index++;
+                        continue;
+                    }
+                } else if (partCurrent.PartType == RCPartType.DefaultStart) {
+                    var partDefaultStart = partCurrent;
+                    if (currentListPart.TryHasPartType(index + 1, RCPartType.DefaultContent, out var partDefaultContent)
+                        && currentListPart.TryHasPartType(index + 2, RCPartType.DefaultEnd, out var partDefaultEnd)) {
+                        //
+                        if (currentListPart.TryHasPartType(index + 3, RCPartType.CustomizeStart, out var partCustomizeStart)
+                            && currentListPart.TryHasPartType(index + 4, RCPartType.CustomizeContent, out var partCustomizeContent)
+                            && currentListPart.TryHasPartType(index + 5, RCPartType.CustomizeEnd, out var partCustomizeEnd)) {
+                            //
+                            if (partDefaultStart.IsEqualPlaceholderName(partDefaultEnd, out var placeholderNameDefault)
+                            && partCustomizeStart.IsEqualPlaceholderName(partCustomizeEnd, out var placeholderNameCustomize)
+                            && placeholderNameDefault.Equals(placeholderNameCustomize, StringComparison.Ordinal)
+                            ) {
+                                //
+                                bool hasCustomizeContent = 0 < partCustomizeContent.OldContent.Trim().Length;
+                                if (hasCustomizeContent) {
+                                    // Customize has higher priority
+                                    partDefaultContent.NextContent = string.Empty;
+                                } else {
+                                    if (context.TryGetReplacementValue(placeholderNameDefault, out var replacementValue)) { 
+                                        // TODO
+                                    }
+                                }
+                            }
+                            index += 6;
+                        } else {
+                            //
+                            index += 3;
+                        }
                         continue;
                     } else {
                         index++;
                         continue;
                     }
+                } else {
+                    index++;
+                    continue;
                 }
             }
         }

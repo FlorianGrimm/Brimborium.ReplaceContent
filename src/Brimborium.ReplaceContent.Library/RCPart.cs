@@ -91,33 +91,43 @@ public class RCPart {
         return result.ToString();
     }
 }
+public static class RCPartExtension {
+    public static bool TryHasPartType(this RCPart that, RCPartType rcPartType, [MaybeNullWhen(false)] out RCPart result) {
+        if (that.PartType == rcPartType) {
+            result = that;
+            return true;
+        } else {
+            result = default;
+            return false;
+        }
+    }
 
-/// <summary>
-/// Defines the types of parts that can be identified during content parsing.
-/// </summary>
-public enum RCPartType {
-    /// <summary>
-    /// Represents regular text content that is not part of a placeholder.
-    /// </summary>
-    ConstantText = 1,
-    
-    /// <summary>
-    /// Represents the start tag of a placeholder.
-    /// </summary>
-    PlaceholderStart,
-    
-    /// <summary>
-    /// Represents the end tag of a placeholder.
-    /// </summary>
-    PlaceholderEnd,
-    
-    /// <summary>
-    /// Represents the content between placeholder start and end tags.
-    /// </summary>
-    PlaceholderContent,
-    
-    /// <summary>
-    /// Represents an error encountered during parsing.
-    /// </summary>
-    Error
+    public static bool IsEqualPlaceholderName(this RCPart thatStart, RCPart thatEnd, [MaybeNullWhen(false)] out StringSlice placeholderName) {
+        if (thatStart.PlaceholderName is { IsEmpty: false } startPlaceholderName
+            ) {
+            if (thatEnd.PlaceholderName is { IsEmpty: false } endPlaceholderName) {
+                if (startPlaceholderName.Equals(endPlaceholderName, StringComparison.Ordinal)) {
+                    placeholderName = startPlaceholderName;
+                    return true;
+                }
+            } else {
+                placeholderName = startPlaceholderName;
+                return true;
+            }
+        }
+        {
+            placeholderName = "".AsStringSlice();
+            return false;
+        }
+    }
+
+    public static bool TryHasPartType(this List<RCPart> that, int index, RCPartType rcPartType, [MaybeNullWhen(false)] out RCPart result) {
+        if (index < that.Count) {
+            result = that[index];
+            return (result.PartType == rcPartType);
+        } else {
+            result = default;
+            return false;
+        }
+    }
 }

@@ -57,6 +57,32 @@ FROM TableA
 
 ```
 
+## Syntax
+
+### Placeholder
+
+```Text
+/* Placeholder NAME */
+CONTENT
+/* /Placeholder NAME */
+```
+
+The CONTENT will be replaced by the value with the key NAME in the Replacements
+
+### Customize
+
+```Text
+/* Default NAME */
+Default-CONTENT
+/* /Default NAME */
+/* Customize NAME */
+Customized-CONTENT
+/* /Customize NAME */
+```
+
+The Default-Content (of the template or within the Replacements) will be used if Customized-CONTENT is empty.
+Customized-CONTENT will be used if present and the Default-Content will be cleared.
+
 ## Usage - Command Line
 
 Syntax:
@@ -84,7 +110,13 @@ Parameters:
 ## Usage - PowerShell
 
 ```PowerShell
-Update-Content -File Source.sql -ReplaceDirectory "Replacements"
+Update-Content -File Source.sql -ReplacementsDirectory "Replacements"
 ```
 
 TODO: example with custom dictionary
+
+## Usage C#
+
+```c#
+TODO
+```

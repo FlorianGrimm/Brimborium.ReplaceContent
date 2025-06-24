@@ -6,6 +6,10 @@ namespace Brimborium.ReplaceContent;
 public static class RCParser {
     private static readonly string _PlaceholderStartStart = "<Placeholder ";
     private static readonly string _PlaceholderEndStart = "</Placeholder";
+    private static readonly string _DefaultStartStart = "<Default ";
+    private static readonly string _DefaultEndStart = "</Default";
+    private static readonly string _CustomizeStartStart = "<Customize ";
+    private static readonly string _CustomizeEndStart = "</Customize";
     private static readonly string _PlaceholderStartEnd = ">";
     private static readonly string _PlaceholderEndEnd = ">";
     private static readonly char[] _TabAndSpace = new char[] { '\t', ' ' };
@@ -30,7 +34,7 @@ public static class RCParser {
         Stack<List<RCPart>> stackAST = new();
         stackAST.Push(currentListAST);
 
-        string ? currentPlaceholderName = null;
+        string? currentPlaceholderName = null;
         Stack<string?> stackPlaceholderName = new ();
         stackPlaceholderName.Push(null);
         
@@ -147,8 +151,165 @@ public static class RCParser {
                                     indentation: null));
 
                             content = contentAfterLastFind = foundCommentEnd.After;
-                            //content = contentAfterLastFind = commentEndAfterWithoutTrailingWS;
-                        } else {
+                        }
+                        // --- Default ---
+                        else if (contentPayload.StartsWith(_DefaultStartStart) && contentPayload.EndsWith(_PlaceholderStartEnd)) {
+                            var contentBeforeComment = contentAfterLastFind.SubstringBetweenStartAndStart(foundCommentStart.Found);
+                            if (0 < contentBeforeComment.Length) {
+                                currentListAST.Add(
+                                    new RCPart(
+                                        partType: RCPartType.ConstantText,
+                                        oldContent: contentBeforeComment.ToString(),
+                                        errorMessage: null,
+                                        placeholderName: null,
+                                        indentation: null));
+                                var currentIndentationSlice = contentBeforeComment.TrimEnd(_TabAndSpace).SubstringBetweenEndAndEnd(contentBeforeComment);
+                                currentIndentation = 0 < currentIndentationSlice.Length ? currentIndentationSlice.ToString() : null;
+                            }
+                            var commentEndAfterWithoutTrailingWS = foundCommentEnd.After.TrimStart(_TabAndSpace).TrimStart(_CrLf);
+                            var contentCompleteDefault = foundCommentStart.FoundAndAfter
+                                .SubstringBetweenStartAndStart(commentEndAfterWithoutTrailingWS);
+
+                            var contentDefaultName = contentPayload[new Range(new Index(_DefaultStartStart.Length, false), new Index(_PlaceholderStartEnd.Length, true))]
+                                .Trim().ToString();
+                            stackPlaceholderName.Push(currentPlaceholderName = contentDefaultName);
+
+                            var currentAST = new RCPart(
+                                partType: RCPartType.DefaultStart,
+                                oldContent: contentCompleteDefault.ToString(),
+                                errorMessage: null,
+                                placeholderName: contentDefaultName,
+                                indentation: currentIndentation);
+                            currentListAST.Add(currentAST);
+                            stackAST.Push(currentListAST = currentAST.ListAST);
+                            content = contentAfterLastFind = commentEndAfterWithoutTrailingWS;
+                        }
+                        else if (contentPayload.StartsWith(_DefaultEndStart) && contentPayload.EndsWith(_PlaceholderEndEnd)) {
+                            var contentCompleteDefault = foundCommentStart.Before.TrimEnd(_TabAndSpace).SubstringBetweenEndAndEnd(foundCommentEnd.Found);
+                            var contentBeforeComment = contentAfterLastFind.SubstringBetweenStartAndStart(contentCompleteDefault);
+                            var contentDefaultName = contentPayload[new Range(new Index(_DefaultStartStart.Length, false), new Index(_PlaceholderStartEnd.Length, true))]
+                                .Trim().ToString();
+                            if (string.IsNullOrEmpty(contentDefaultName)) {
+                                contentDefaultName = currentPlaceholderName;
+                            }
+
+                            string? errorMessage;
+                            if (string.Equals(contentDefaultName, currentPlaceholderName)) {
+                                errorMessage = null;
+                            } else {
+                                errorMessage = $"{contentDefaultName} expected, {currentPlaceholderName} found.";
+                            }
+
+                            stackPlaceholderName.Pop();
+                            if (!stackPlaceholderName.TryPeek(out currentPlaceholderName)) {
+                                errorMessage ??= $"inbalanced nested Default";
+                            }
+                            stackAST.Pop();
+                            if (!stackAST.TryPeek(out currentListAST)) {
+                                errorMessage ??= "inbalanced nested Default";
+                                currentListAST ??= result;
+                            }
+
+                            if (0 < contentBeforeComment.Length) {
+                                currentListAST.Add(
+                                    new RCPart(
+                                        partType: RCPartType.DefaultContent,
+                                        oldContent: contentBeforeComment.ToString(),
+                                        errorMessage: errorMessage,
+                                        placeholderName: contentDefaultName,
+                                        indentation: null));
+                            }
+
+                            currentListAST.Add(
+                                new RCPart(
+                                    partType: RCPartType.DefaultEnd,
+                                    oldContent: contentCompleteDefault.ToString(),
+                                    errorMessage: errorMessage,
+                                    placeholderName: contentDefaultName,
+                                    indentation: null));
+
+                            content = contentAfterLastFind = foundCommentEnd.After;
+                        }
+                        // --- Customize ---
+                        else if (contentPayload.StartsWith(_CustomizeStartStart) && contentPayload.EndsWith(_PlaceholderStartEnd)) {
+                            var contentBeforeComment = contentAfterLastFind.SubstringBetweenStartAndStart(foundCommentStart.Found);
+                            if (0 < contentBeforeComment.Length) {
+                                currentListAST.Add(
+                                    new RCPart(
+                                        partType: RCPartType.ConstantText,
+                                        oldContent: contentBeforeComment.ToString(),
+                                        errorMessage: null,
+                                        placeholderName: null,
+                                        indentation: null));
+                                var currentIndentationSlice = contentBeforeComment.TrimEnd(_TabAndSpace).SubstringBetweenEndAndEnd(contentBeforeComment);
+                                currentIndentation = 0 < currentIndentationSlice.Length ? currentIndentationSlice.ToString() : null;
+                            }
+                            var commentEndAfterWithoutTrailingWS = foundCommentEnd.After.TrimStart(_TabAndSpace).TrimStart(_CrLf);
+                            var contentCompleteCustomize = foundCommentStart.FoundAndAfter
+                                .SubstringBetweenStartAndStart(commentEndAfterWithoutTrailingWS);
+
+                            var contentCustomizeName = contentPayload[new Range(new Index(_CustomizeStartStart.Length, false), new Index(_PlaceholderStartEnd.Length, true))]
+                                .Trim().ToString();
+                            stackPlaceholderName.Push(currentPlaceholderName = contentCustomizeName);
+
+                            var currentAST = new RCPart(
+                                partType: RCPartType.CustomizeStart,
+                                oldContent: contentCompleteCustomize.ToString(),
+                                errorMessage: null,
+                                placeholderName: contentCustomizeName,
+                                indentation: currentIndentation);
+                            currentListAST.Add(currentAST);
+                            stackAST.Push(currentListAST = currentAST.ListAST);
+                            content = contentAfterLastFind = commentEndAfterWithoutTrailingWS;
+                        }
+                        else if (contentPayload.StartsWith(_CustomizeEndStart) && contentPayload.EndsWith(_PlaceholderEndEnd)) {
+                            var contentCompleteCustomize = foundCommentStart.Before.TrimEnd(_TabAndSpace).SubstringBetweenEndAndEnd(foundCommentEnd.Found);
+                            var contentBeforeComment = contentAfterLastFind.SubstringBetweenStartAndStart(contentCompleteCustomize);
+                            var contentCustomizeName = contentPayload[new Range(new Index(_CustomizeStartStart.Length, false), new Index(_PlaceholderStartEnd.Length, true))]
+                                .Trim().ToString();
+                            if (string.IsNullOrEmpty(contentCustomizeName)) {
+                                contentCustomizeName = currentPlaceholderName;
+                            }
+
+                            string? errorMessage;
+                            if (string.Equals(contentCustomizeName, currentPlaceholderName)) {
+                                errorMessage = null;
+                            } else {
+                                errorMessage = $"{contentCustomizeName} expected, {currentPlaceholderName} found.";
+                            }
+
+                            stackPlaceholderName.Pop();
+                            if (!stackPlaceholderName.TryPeek(out currentPlaceholderName)) {
+                                errorMessage ??= $"inbalanced nested Customize";
+                            }
+                            stackAST.Pop();
+                            if (!stackAST.TryPeek(out currentListAST)) {
+                                errorMessage ??= "inbalanced nested Customize";
+                                currentListAST ??= result;
+                            }
+
+                            if (0 < contentBeforeComment.Length) {
+                                currentListAST.Add(
+                                    new RCPart(
+                                        partType: RCPartType.CustomizeContent,
+                                        oldContent: contentBeforeComment.ToString(),
+                                        errorMessage: errorMessage,
+                                        placeholderName: contentCustomizeName,
+                                        indentation: null));
+                            }
+
+                            currentListAST.Add(
+                                new RCPart(
+                                    partType: RCPartType.CustomizeEnd,
+                                    oldContent: contentCompleteCustomize.ToString(),
+                                    errorMessage: errorMessage,
+                                    placeholderName: contentCustomizeName,
+                                    indentation: null));
+
+                            content = contentAfterLastFind = foundCommentEnd.After;
+                        }
+                        // --- Unknown ---
+                        else {
                             content = foundCommentEnd.After;
                         }
                     }

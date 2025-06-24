@@ -1,0 +1,23 @@
+﻿{
+  Identifier: TestFileCustomizeDefault.txt,
+  FileType: {
+    Name: Default,
+    CommentStart: /*,
+    CommentEnd: */
+  },
+  CurrentContent: {
+    Text:
+aaaaaaaaa
+/* <Default TestName> */
+new-default-content
+/* </Default TestName> */
+/* <Customize TestName> */
+/* </Customize TestName> */
+ccccccccc,
+    IsEmpty: false
+  },
+  ParseResult: {
+    IsValid: false
+  },
+  Modified: false
+}

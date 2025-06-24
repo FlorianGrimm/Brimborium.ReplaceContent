@@ -103,4 +103,37 @@ public class RCParserTests {
         settings.IgnoreMembers<StringSlice>(x => x.Length);
         await Verify(result, settings);
     }
+
+    [Test]
+    public async Task ParseWithCustomizeAndDefault() {
+        var content = """
+            aaaaaaaaa
+            /* <Default TestName> */
+            default-content
+            /* </Default TestName> */
+            /* <Customize TestName> */
+            customized-content
+            /* </Customize TestName> */
+            ccccccccc
+            """;
+        var result = RCParser.Parse(content, "/*", "*/");
+
+        // The expected parts are:
+        // 1. ConstantText (before Default)
+        // 2. DefaultStart
+        // 3. DefaultContent
+        // 4. DefaultEnd
+        // 5. CustomizeStart
+        // 6. CustomizeContent
+        // 7. CustomizeEnd
+        // 8. ConstantText (after Customize)
+        await Assert.That(result.ListPart.Count).IsEqualTo(8);
+        await Assert.That(result.IsValid).IsEqualTo(true);
+
+        var settings = new VerifySettings();
+        settings.IgnoreMembers<RCPart>(x => x.NextContent);
+        settings.IgnoreMembers<StringSlice>(x => x.Range);
+        settings.IgnoreMembers<StringSlice>(x => x.Length);
+        await Verify(result, settings);
+    }
 }
